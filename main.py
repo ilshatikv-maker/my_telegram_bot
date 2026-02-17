@@ -1,8 +1,11 @@
 import logging
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 import os
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv()
 
@@ -12,32 +15,34 @@ logging.basicConfig(level=logging.INFO)
 
 # Инициализация бота
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
 # Обработчик команды /start
-@dp.message_handler(commands=['start'])
+@dp.message(Command('start'))
 async def start_command(message: types.Message):
     # Создаем кнопку с Mini App
-    keyboard = InlineKeyboardMarkup().add(
-        InlineKeyboardButton(
-            text="🌍 Открыть TravelMate Mini App",
-            web_app=WebAppInfo(url="https://ilshatikv-maker.github.io/my_telegram_bot/web/")
-        )
-    )
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(
+        text="🌍 Открыть TravelMate Mini App",
+        web_app=WebAppInfo(url="https://ilshatikv-maker.github.io/my_telegram_bot/web/")
+    ))
     
-    await message.reply(
+    await message.answer(
         "👋 Добро пожаловать в TravelMate!\n\n"
         "Нажми кнопку ниже, чтобы открыть мини-приложение:",
-        reply_markup=keyboard
+        reply_markup=builder.as_markup()
     )
 
 # Обработчик данных из Mini App
-@dp.message_handler(content_types=['web_app_data'])
+@dp.message(lambda message: message.web_app_data)
 async def handle_web_app_data(message: types.Message):
     data = message.web_app_data.data
     await message.answer(f"Получены данные: {data}")
 
 # Запуск бота
-if __name__ == '__main__':
+async def main():
     logging.info("Starting TravelMate bot...")
-    executor.start_polling(dp, skip_updates=True)
+    await dp.start_polling(bot)
+
+if __name__ == '__main__':
+    asyncio.run(main())
