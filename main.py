@@ -212,3 +212,20 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+    from aiogram import types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+
+@dp.message_handler(commands=['start'])
+async def start_command(message: types.Message):
+    # Кнопка для открытия Mini App
+    keyboard = InlineKeyboardMarkup().add(
+        InlineKeyboardButton(
+            text="Открыть Mini App", 
+            web_app=WebAppInfo(url="https://ilshatikv-maker.github.io/my_telegram_bot/web/")
+        )
+    )
+    
+    await message.reply(
+        "Нажми кнопку, чтобы открыть мини-приложение:",
+        reply_markup=keyboard
+    )
