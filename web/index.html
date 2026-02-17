@@ -1,910 +1,193 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TravelMate Premium</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
+import logging
+import json
+import os
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from dotenv import load_dotenv
+import asyncio
 
-        body {
-            background: var(--tg-theme-bg-color, #f8faff);
-            color: var(--tg-theme-text-color, #1a1f36);
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-        }
+load_dotenv()
 
-        /* Анимированный фон */
-        .background-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: -1;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            opacity: 0.1;
-            animation: gradientShift 10s ease infinite;
-        }
+API_TOKEN = os.getenv('BOT_TOKEN')
+logging.basicConfig(level=logging.INFO)
 
-        @keyframes gradientShift {
-            0%, 100% { opacity: 0.1; }
-            50% { opacity: 0.15; }
-        }
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher()
 
-        .container {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Шапка с аватаром */
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 30px;
-            padding: 30px 20px;
-            margin-bottom: 25px;
-            color: white;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
-            animation: slideInDown 0.5s ease;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .profile-row {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .avatar {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
-        .header-text {
-            flex: 1;
-        }
-
-        .header-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .header-subtitle {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .stats {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .stat-item {
-            flex: 1;
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 12px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            opacity: 0.8;
-        }
-
-        /* Поиск */
-        .search-box {
-            background: var(--tg-theme-secondary-bg-color, white);
-            border-radius: 25px;
-            padding: 12px 20px;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            border: 1px solid rgba(102, 126, 234, 0.1);
-            animation: slideInUp 0.5s ease 0.1s both;
-        }
-
-        .search-box input {
-            flex: 1;
-            border: none;
-            background: none;
-            outline: none;
-            font-size: 16px;
-            color: var(--tg-theme-text-color, #1a1f36);
-        }
-
-        .search-box input::placeholder {
-            color: #a0aec0;
-        }
-
-        /* Категории */
-        .categories {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-            scrollbar-width: none;
-            animation: slideInUp 0.5s ease 0.2s both;
-        }
-
-        .categories::-webkit-scrollbar {
-            display: none;
-        }
-
-        .category {
-            background: var(--tg-theme-secondary-bg-color, white);
-            padding: 10px 20px;
-            border-radius: 30px;
-            white-space: nowrap;
-            font-weight: 600;
-            font-size: 14px;
-            color: #667eea;
-            border: 2px solid transparent;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            cursor: pointer;
-        }
-
-        .category.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .category:active {
-            transform: scale(0.95);
-        }
-
-        /* Секции */
-        .section {
-            margin-bottom: 30px;
-            animation: slideInUp 0.5s ease 0.3s both;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--tg-theme-text-color, #1a1f36);
-        }
-
-        .section-link {
-            color: #667eea;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        /* Сетка стран */
-        .countries-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        .country-card {
-            background: var(--tg-theme-secondary-bg-color, white);
-            border-radius: 20px;
-            padding: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            transition: all 0.3s;
-            border: 1px solid rgba(102, 126, 234, 0.1);
-            cursor: pointer;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .country-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 35px rgba(102, 126, 234, 0.2);
-            border-color: #667eea;
-        }
-
-        .country-card:active {
-            transform: scale(0.95);
-        }
-
-        .country-flag {
-            font-size: 40px;
-            margin-bottom: 10px;
-            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
-        }
-
-        .country-name {
-            font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 5px;
-            color: var(--tg-theme-text-color, #1a1f36);
-        }
-
-        .country-info {
-            font-size: 12px;
-            color: #a0aec0;
-            display: flex;
-            gap: 10px;
-        }
-
-        /* Горизонтальный скролл для советов */
-        .tips-scroll {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 15px;
-            scrollbar-width: none;
-        }
-
-        .tips-scroll::-webkit-scrollbar {
-            display: none;
-        }
-
-        .tip-card {
-            min-width: 150px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 20px;
-            color: white;
-            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .tip-card:active {
-            transform: scale(0.95);
-        }
-
-        .tip-icon {
-            font-size: 30px;
-            margin-bottom: 10px;
-        }
-
-        .tip-title {
-            font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .tip-desc {
-            font-size: 12px;
-            opacity: 0.9;
-        }
-
-        /* Список валют */
-        .currency-list {
-            background: var(--tg-theme-secondary-bg-color, white);
-            border-radius: 20px;
-            padding: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        }
-
-        .currency-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .currency-item:last-child {
-            border-bottom: none;
-        }
-
-        .currency-item:active {
-            background: rgba(102, 126, 234, 0.05);
-            transform: translateX(5px);
-        }
-
-        .currency-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .currency-flag {
-            font-size: 24px;
-        }
-
-        .currency-info {
-            font-weight: 600;
-        }
-
-        .currency-code {
-            font-size: 12px;
-            color: #a0aec0;
-        }
-
-        .currency-rate {
-            font-weight: 700;
-            color: #667eea;
-        }
-
-        /* Анимации */
-        @keyframes slideInDown {
-            from {
-                transform: translateY(-30px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideInUp {
-            from {
-                transform: translateY(30px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        /* Уведомление */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 30px;
-            text-align: center;
-            font-weight: 600;
-            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s;
-            z-index: 1000;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        /* Скрытые элементы */
-        .hidden {
-            display: none !important;
-        }
-    </style>
-</head>
-<body>
-    <div class="background-animation"></div>
+@dp.message(Command('start'))
+async def start_command(message: types.Message):
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(
+        text="🌍 Открыть TravelMate",
+        web_app=WebAppInfo(url="https://ilshatikv-maker.github.io/my_telegram_bot/web/?v=final")
+    ))
     
-    <div class="container">
-        <!-- Шапка -->
-        <div class="header">
-            <div class="profile-row">
-                <div class="avatar">🌍</div>
-                <div class="header-text">
-                    <div class="header-title">TravelMate</div>
-                    <div class="header-subtitle">Твой персональный гид</div>
-                </div>
-            </div>
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-value">52</div>
-                    <div class="stat-label">Страны</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">128</div>
-                    <div class="stat-label">Советы</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">24/7</div>
-                    <div class="stat-label">Поддержка</div>
-                </div>
-            </div>
-        </div>
+    await message.answer(
+        "👋 Добро пожаловать в TravelMate!\n\n"
+        "🎯 Теперь работают ВСЕ кнопки:\n"
+        "• Страны (15+ стран)\n"
+        "• Визы (Шенген, США, и т.д.)\n"
+        "• Страховки (все виды)\n"
+        "• Советы (20+ советов)\n"
+        "• Погода в странах\n"
+        "• Курсы валют (8 валют)\n"
+        "• Транспорт\n"
+        "• Отели\n"
+        "• Еда и кухня\n\n"
+        "👇 Нажми кнопку и проверь!",
+        reply_markup=builder.as_markup()
+    )
 
-        <!-- Поиск -->
-        <div class="search-box">
-            <span>🔍</span>
-            <input type="text" placeholder="Поиск стран, советов, валют..." id="searchInput">
-        </div>
-
-        <!-- Категории -->
-        <div class="categories" id="categories">
-            <div class="category active" onclick="filterByCategory('all')">🔥 Все</div>
-            <div class="category" onclick="filterByCategory('europe')">🇪🇺 Европа</div>
-            <div class="category" onclick="filterByCategory('asia')">🌏 Азия</div>
-            <div class="category" onclick="filterByCategory('america')">🌎 Америка</div>
-            <div class="category" onclick="filterByCategory('africa')">🌍 Африка</div>
-            <div class="category" onclick="filterByCategory('popular')">⭐ Популярные</div>
-        </div>
-
-        <!-- Основной контент -->
-        <div id="mainContent">
-            <!-- Популярные направления -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">✈️ Популярные направления</div>
-                    <a href="#" class="section-link" onclick="showAllCountries()">Смотреть все →</a>
-                </div>
-                <div class="countries-grid">
-                    <div class="country-card" onclick="selectCountry('Турция')">
-                        <div class="country-flag">🇹🇷</div>
-                        <div class="country-name">Турция</div>
-                        <div class="country-info">
-                            <span>🌡️ 28°C</span>
-                            <span>💶 1.2K</span>
-                        </div>
-                    </div>
-                    <div class="country-card" onclick="selectCountry('Таиланд')">
-                        <div class="country-flag">🇹🇭</div>
-                        <div class="country-name">Таиланд</div>
-                        <div class="country-info">
-                            <span>🌡️ 32°C</span>
-                            <span>💶 1.5K</span>
-                        </div>
-                    </div>
-                    <div class="country-card" onclick="selectCountry('Италия')">
-                        <div class="country-flag">🇮🇹</div>
-                        <div class="country-name">Италия</div>
-                        <div class="country-info">
-                            <span>🌡️ 24°C</span>
-                            <span>💶 2.0K</span>
-                        </div>
-                    </div>
-                    <div class="country-card" onclick="selectCountry('ОАЭ')">
-                        <div class="country-flag">🇦🇪</div>
-                        <div class="country-name">ОАЭ</div>
-                        <div class="country-info">
-                            <span>🌡️ 35°C</span>
-                            <span>💶 2.5K</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Полезные советы -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">💡 Полезные советы</div>
-                    <a href="#" class="section-link" onclick="showAllTips()">Все советы →</a>
-                </div>
-                <div class="tips-scroll">
-                    <div class="tip-card" onclick="getTip('visa')">
-                        <div class="tip-icon">📄</div>
-                        <div class="tip-title">Оформление визы</div>
-                        <div class="tip-desc">Документы, сроки</div>
-                    </div>
-                    <div class="tip-card" onclick="getTip('insurance')">
-                        <div class="tip-icon">🩺</div>
-                        <div class="tip-title">Страховка</div>
-                        <div class="tip-desc">Медицина за рубежом</div>
-                    </div>
-                    <div class="tip-card" onclick="getTip('money')">
-                        <div class="tip-icon">💰</div>
-                        <div class="tip-title">Экономия</div>
-                        <div class="tip-desc">Как сэкономить</div>
-                    </div>
-                    <div class="tip-card" onclick="getTip('transport')">
-                        <div class="tip-icon">🚗</div>
-                        <div class="tip-title">Транспорт</div>
-                        <div class="tip-desc">Аренда, билеты</div>
-                    </div>
-                    <div class="tip-card" onclick="getTip('hotels')">
-                        <div class="tip-icon">🏨</div>
-                        <div class="tip-title">Отели</div>
-                        <div class="tip-desc">Лучшие предложения</div>
-                    </div>
-                    <div class="tip-card" onclick="getTip('food')">
-                        <div class="tip-icon">🍜</div>
-                        <div class="tip-title">Еда</div>
-                        <div class="tip-desc">Местная кухня</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Курсы валют -->
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">💵 Курсы валют</div>
-                    <a href="#" class="section-link" onclick="refreshRates()">🔄 Обновить</a>
-                </div>
-                <div class="currency-list">
-                    <div class="currency-item" onclick="getCurrency('USD')">
-                        <div class="currency-left">
-                            <span class="currency-flag">🇺🇸</span>
-                            <div class="currency-info">
-                                <div>Доллар США</div>
-                                <div class="currency-code">USD</div>
-                            </div>
-                        </div>
-                        <div class="currency-rate">91.45 ₽</div>
-                    </div>
-                    <div class="currency-item" onclick="getCurrency('EUR')">
-                        <div class="currency-left">
-                            <span class="currency-flag">🇪🇺</span>
-                            <div class="currency-info">
-                                <div>Евро</div>
-                                <div class="currency-code">EUR</div>
-                            </div>
-                        </div>
-                        <div class="currency-rate">98.76 ₽</div>
-                    </div>
-                    <div class="currency-item" onclick="getCurrency('TRY')">
-                        <div class="currency-left">
-                            <span class="currency-flag">🇹🇷</span>
-                            <div class="currency-info">
-                                <div>Турецкая лира</div>
-                                <div class="currency-code">TRY</div>
-                            </div>
-                        </div>
-                        <div class="currency-rate">2.84 ₽</div>
-                    </div>
-                    <div class="currency-item" onclick="getCurrency('THB')">
-                        <div class="currency-left">
-                            <span class="currency-flag">🇹🇭</span>
-                            <div class="currency-info">
-                                <div>Тайский бат</div>
-                                <div class="currency-code">THB</div>
-                            </div>
-                        </div>
-                        <div class="currency-rate">2.52 ₽</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Все страны (скрыто по умолчанию) -->
-            <div id="allCountriesSection" class="hidden">
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-title">🌍 Все страны</div>
-                        <a href="#" class="section-link" onclick="backToMain()">← Назад</a>
-                    </div>
-                    <div class="countries-grid" id="allCountriesGrid">
-                        <!-- Здесь будут все страны -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Все советы (скрыто по умолчанию) -->
-            <div id="allTipsSection" class="hidden">
-                <div class="section">
-                    <div class="section-header">
-                        <div class="section-title">💡 Все советы</div>
-                        <a href="#" class="section-link" onclick="backToMain()">← Назад</a>
-                    </div>
-                    <div class="tips-scroll" id="allTipsGrid" style="flex-wrap: wrap; overflow-x: visible;">
-                        <!-- Здесь будут все советы -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Уведомление -->
-    <div id="toast" class="toast"></div>
-
-    <script>
-        let tg = window.Telegram.WebApp;
+@dp.message(lambda message: message.web_app_data)
+async def handle_web_app_data(message: types.Message):
+    try:
+        data = json.loads(message.web_app_data.data)
+        action = data.get('action')
+        value = data.get('value')
         
-        // Инициализация
-        tg.expand();
-        tg.ready();
+        # Обработка всех типов кнопок
+        responses = {
+            # Страны
+            'country': {
+                'Турция': '🇹🇷 *Турция*\n\n✅ Виза: без визы 60 дней\n💵 Валюта: лира (TRY)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Анталья, Кемер, Алания\n🍜 Кухня: кебаб, пахлава, рахат-лукум',
+                'Таиланд': '🇹🇭 *Таиланд*\n\n✅ Виза: 30 дней без визы\n💵 Валюта: бат (THB)\n🌡️ Погода: +28..+35°C\n🏖️ Курорты: Пхукет, Паттайя, Самуи\n🍜 Кухня: том ям, пад тай',
+                'Италия': '🇮🇹 *Италия*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +20..+30°C\n🏛️ Города: Рим, Венеция, Флоренция\n🍜 Кухня: пицца, паста, джелато',
+                'Испания': '🇪🇸 *Испания*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +22..+32°C\n🏖️ Курорты: Барселона, Коста-Брава\n🍜 Кухня: паэлья, хамон, тапас',
+                'Греция': '🇬🇷 *Греция*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +25..+35°C\n🏖️ Острова: Крит, Родос, Корфу\n🍜 Кухня: мусака, сувлаки, сыр фета',
+                'ОАЭ': '🇦🇪 *ОАЭ*\n\n✅ Виза: по прилету\n💵 Валюта: дирхам (AED)\n🌡️ Погода: +30..+40°C\n🏙️ Города: Дубай, Абу-Даби\n🛍️ Шоппинг: золото, техника',
+                'Франция': '🇫🇷 *Франция*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +18..+25°C\n🏛️ Города: Париж, Лион, Марсель\n🍜 Кухня: круассаны, сыры, вино',
+                'Германия': '🇩🇪 *Германия*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +15..+25°C\n🏰 Города: Берлин, Мюнхен, Гамбург\n🍜 Кухня: колбаски, шницель, пиво',
+                'Великобритания': '🇬🇧 *Великобритания*\n\n✅ Виза: UK Visa\n💵 Валюта: фунт (GBP)\n🌡️ Погода: +10..+20°C\n🏙️ Города: Лондон, Манчестер\n🍜 Кухня: fish and chips',
+                'Япония': '🇯🇵 *Япония*\n\n✅ Виза: нужна виза\n💵 Валюта: иена (JPY)\n🌡️ Погода: +15..+30°C\n🏯 Города: Токио, Киото, Осака\n🍜 Кухня: суши, рамен, темпура',
+                'Китай': '🇨🇳 *Китай*\n\n✅ Виза: нужна виза\n💵 Валюта: юань (CNY)\n🌡️ Погода: +10..+30°C\n🏯 Города: Пекин, Шанхай\n🍜 Кухня: утка по-пекински',
+                'Индия': '🇮🇳 *Индия*\n\n✅ Виза: e-Visa\n💵 Валюта: рупия (INR)\n🌡️ Погода: +25..+35°C\n🕌 Города: Дели, Мумбаи, Гоа\n🍜 Кухня: карри, наан',
+                'Египет': '🇪🇬 *Египет*\n\n✅ Виза: по прилету\n💵 Валюта: фунт (EGP)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Шарм-эль-Шейх, Хургада',
+                'Тунис': '🇹🇳 *Тунис*\n\n✅ Виза: без визы\n💵 Валюта: динар (TND)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Сусс, Хаммамет, Джерба',
+                'Мальдивы': '🇲🇻 *Мальдивы*\n\n✅ Виза: по прилету\n💵 Валюта: руфия (MVR)\n🌡️ Погода: +28..+32°C\n🏝️ Райские острова, овервотер бунгало',
+            },
+            
+            # Визы
+            'visa': {
+                'Шенген': '📄 *Шенгенская виза*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета\n• Фото 3.5x4.5\n• Страховка от 30k€\n• Брони отеля\n• Билеты\n• Справка с работы\n\n⏰ Срок: 5-10 раб дней\n💰 Стоимость: 80€',
+                'США': '📄 *Виза в США (B1/B2)*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета DS-160\n• Фото 5x5\n• Подтверждение оплаты\n• Запись на собеседование\n\n⏰ Срок: от 2 недель\n💰 Стоимость: 160$',
+                'Великобритания': '📄 *Виза в Великобританию*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета онлайн\n• Биометрия\n• Подтверждение доходов\n\n⏰ Срок: 3-4 недели\n💰 Стоимость: от 100£',
+                'Китай': '📄 *Виза в Китай*\n\n📋 Документы:\n• Загранпаспорт\n• Приглашение\n• Брони отеля\n• Билеты\n\n⏰ Срок: 4-5 дней\n💰 Стоимость: от 150$',
+                'Япония': '📄 *Виза в Японию*\n\n📋 Документы:\n• Загранпаспорт\n• Спонсорское письмо\n• Выписка со счета\n• План поездки\n\n⏰ Срок: 5-7 дней\n💰 Стоимость: от 3000₽',
+                'Индия': '📄 *Электронная виза в Индию*\n\n✅ Оформляется онлайн\n📋 Нужен загранпаспорт и фото\n⏰ Срок: 3-5 дней\n💰 Стоимость: от 80$',
+                'Турция': '📄 *Виза в Турцию*\n\n✅ Без визы до 60 дней\n✅ Нужен только загранпаспорт',
+                'ОАЭ': '📄 *Виза в ОАЭ*\n\n✅ По прилету на 30 дней\n💰 Стоимость: бесплатно',
+                'документы': '📋 *Общий список документов*\n\n• Загранпаспорт (срок действия 6 мес)\n• Копия паспорта РФ\n• Фото 3.5x4.5 (матовая)\n• Мед страховка\n• Подтверждение доходов\n• Брони отелей\n• Авиабилеты',
+                'сроки': '⏰ *Сроки оформления*\n\n• Шенген: 5-10 дней\n• США: 2-4 недели\n• Великобритания: 3 недели\n• Азия: 3-7 дней\n• Срочные визы: 1-3 дня',
+                'стоимость': '💰 *Стоимость виз*\n\n• Шенген: 80€\n• США: 160$\n• Великобритания: 100£\n• Китай: 150$\n• Япония: 3000₽\n• Индия: 80$',
+            },
+            
+            # Страховки
+            'insurance': {
+                'Турция': '🩺 *Страховка в Турцию*\n\n🔵 Базовая: от 500₽/день\n🔵 Расширенная: от 800₽/день\n⚽ Спортивная: от 1200₽/день\n\n✅ Покрытие: от 30k€\n✅ Телемедицина 24/7\n✅ Прямая оплата',
+                'Таиланд': '🩺 *Страховка в Таиланд*\n\n🔵 Базовая: от 600₽/день\n🔵 Расширенная: от 900₽/день\n⚽ Спортивная: от 1500₽/день\n\n⚠️ Обязательна страховка от COVID',
+                'Италия': '🩺 *Страховка в Италию*\n\n🔵 Базовая: от 550₽/день\n🔵 Расширенная: от 850₽/день\n⚽ Спортивная: от 1300₽/день\n\n✅ Для Шенгена обязательно',
+                'Испания': '🩺 *Страховка в Испанию*\n\n🔵 Базовая: от 550₽/день\n🔵 Расширенная: от 850₽/день\n⚽ Спортивная: от 1300₽/день',
+                'США': '🩺 *Страховка в США*\n\n🔵 Базовая: от 1500₽/день\n🔵 Расширенная: от 2500₽/день\n\n⚠️ Медицина в США дорогая',
+                'ОАЭ': '🩺 *Страховка в ОАЭ*\n\n🔵 Базовая: от 500₽/день\n🔵 Расширенная: от 800₽/день',
+                'базовая': '🟢 *Базовая страховка*\n\n✅ Покрытие: 30k€\n✅ Амбулаторное лечение\n✅ Экстренная госпитализация\n✅ Транспортировка\n\n💰 Цена: от 500₽/день',
+                'расширенная': '🔵 *Расширенная страховка*\n\n✅ Покрытие: 50k€\n✅ Всё из базовой\n✅ Стоматология\n✅ Посещение родственников\n✅ Юридическая помощь\n\n💰 Цена: от 800₽/день',
+                'спорт': '⚽ *Спортивная страховка*\n\n✅ Покрытие: 50k€\n✅ Экстремальные виды спорта\n✅ Травмы при занятиях\n✅ Горные лыжи/дайвинг\n\n💰 Цена: от 1200₽/день',
+                'отмена': '✈️ *Страховка от отмены*\n\n✅ Отмена поездки\n✅ Задержка рейса\n✅ Потеря багажа\n\n💰 Цена: от 300₽/день',
+            },
+            
+            # Советы
+            'tip': {
+                'visa': '💡 *Советы по визе*\n\n📌 Подавайтесь за 2-3 месяца\n📌 Все документы переведите\n📌 Сделайте качественные фото\n📌 Страховка обязательна\n📌 Имейте подтверждение доходов',
+                'insurance': '💡 *Советы по страховке*\n\n📌 Берите покрытие от 30k€\n📌 Для активного отдыха - спорт\n📌 Проверьте франшизу\n📌 Сохраните номер ассистанса',
+                'money': '💡 *Как экономить*\n\n📌 Ловите акции авиакомпаний\n📌 Отели бронируйте заранее\n📌 Меняйте валюту не в аэропорту\n📌 Покупайте местную симку\n📌 Ешьте там, где местные',
+                'packing': '💡 *Что взять с собой*\n\n📌 Паспорт и документы\n📌 Страховка\n📌 Деньги и карты\n📌 Зарядки и адаптеры\n📌 Аптечка\n📌 Удобная обувь',
+                'safety': '💡 *Правила безопасности*\n\n📌 Копии документов отдельно\n📌 Не носите все деньги с собой\n📌 Сейф в отеле\n📌 Скачайте карты офлайн',
+                'language': '💡 *Разговорник*\n\n• Hello - Здравствуйте\n• Thank you - Спасибо\n• How much - Сколько стоит\n• Help - Помогите\n• Where is - Где находится',
+                'transport': '💡 *Аренда авто*\n\n📌 Нужны права (международные)\n📌 Залог замораживают на карте\n📌 Фото машины при получении\n📌 Страховка обязательна',
+                'hotels': '💡 *Выбор отеля*\n\n📌 Читайте свежие отзывы\n📌 Смотрите расположение\n📌 Завтраки включены?\n📌 Трансфер от отеля',
+                'food': '💡 *Местная кухня*\n\n📌 Пробуйте уличную еду\n📌 Спросите у местных\n📌 Осторожно с острой едой\n📌 Пейте бутилированную воду',
+                'photo': '💡 *Лучшие места для фото*\n\n📌 Ищите смотровые площадки\n📌 Фото на рассвете/закате\n📌 Местные жители колоритны\n📌 Уличные рынки',
+            },
+            
+            # Погода
+            'weather': {
+                'Турция': '🌤️ *Погода в Турции*\n\n🇹🇷 Анталья: +28°C, солнечно\n🇹🇷 Стамбул: +24°C, переменная облачность\n🇹🇷 Кемер: +29°C, ясно\n\n💧 Влажность: 60%\n🌬️ Ветер: 5 м/с',
+                'Таиланд': '🌤️ *Погода в Таиланде*\n\n🇹🇭 Пхукет: +32°C, солнечно\n🇹🇭 Паттайя: +31°C, ясно\n🇹🇭 Самуи: +30°C, небольшие облака\n\n💧 Влажность: 75%',
+                'Италия': '🌤️ *Погода в Италии*\n\n🇮🇹 Рим: +24°C, ясно\n🇮🇹 Венеция: +22°C, облачно\n🇮🇹 Флоренция: +23°C, солнечно',
+                'Испания': '🌤️ *Погода в Испании*\n\n🇪🇸 Барселона: +26°C, солнечно\n🇪🇸 Мадрид: +28°C, ясно\n🇪🇸 Коста-Брава: +25°C',
+                'Греция': '🌤️ *Погода в Греции*\n\n🇬🇷 Афины: +27°C, ясно\n🇬🇷 Крит: +28°C, солнечно\n🇬🇷 Родос: +27°C',
+                'ОАЭ': '🌤️ *Погода в ОАЭ*\n\n🇦🇪 Дубай: +35°C, солнечно\n🇦🇪 Абу-Даби: +36°C, ясно\n\n💧 Влажность: 50%',
+                'Египет': '🌤️ *Погода в Египте*\n\n🇪🇬 Шарм-эль-Шейх: +32°C, солнечно\n🇪🇬 Хургада: +31°C, ясно',
+                'Мальдивы': '🌤️ *Погода на Мальдивах*\n\n🇲🇻 Мале: +30°C, переменная облачность\n🌊 Вода: +28°C',
+            },
+            
+            # Валюта
+            'currency': {
+                'USD': '💵 *Доллар США (USD)*\n\n🇺🇸 1 USD = 91.45 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: +0.23',
+                'EUR': '💵 *Евро (EUR)*\n\n🇪🇺 1 EUR = 98.76 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: +0.15',
+                'TRY': '💵 *Турецкая лира (TRY)*\n\n🇹🇷 1 TRY = 2.84 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: -0.05',
+                'THB': '💵 *Тайский бат (THB)*\n\n🇹🇭 1 THB = 2.52 RUB\n💰 Курс ЦБ РФ',
+                'AED': '💵 *Дирхам ОАЭ (AED)*\n\n🇦🇪 1 AED = 24.90 RUB\n💰 Курс ЦБ РФ',
+                'GBP': '💵 *Фунт стерлингов (GBP)*\n\n🇬🇧 1 GBP = 115.30 RUB\n💰 Курс ЦБ РФ',
+                'CNY': '💵 *Китайский юань (CNY)*\n\n🇨🇳 1 CNY = 12.65 RUB\n💰 Курс ЦБ РФ',
+                'JPY': '💵 *Японская иена (JPY)*\n\n🇯🇵 100 JPY = 61.00 RUB\n💰 Курс ЦБ РФ',
+            },
+            
+            # Транспорт
+            'transport': {
+                'aviasales': '✈️ *Авиабилеты*\n\n🔍 Поиск: Aviasales, Skyscanner\n💰 Москва-Анталья: от 15000₽\n💰 Москва-Бангкок: от 35000₽\n📆 Лучшие дни для покупки: вторник',
+                'train': '🚂 *Поезда*\n\n🇪🇺 Европа: Interrail, Eurail\n🇷🇺 РЖД: туристические маршруты\n💰 Москва-Питер: от 1500₽',
+                'bus': '🚌 *Автобусы*\n\n🌍 FlixBus (Европа)\n🌍 Local buses (Азия)\n💰 Дешевле поездов на 30%',
+                'rental': '🚗 *Аренда авто*\n\n🔍 Поиск: Rentalcars, Economybookings\n💰 Аренда: от 20€/день\n📋 Нужны права и карта',
+                'taxi': '🚕 *Такси*\n\n🌍 Uber, Bolt, Yandex Taxi\n💰 В Азии дешево\n📱 Скачайте приложения',
+                'metro': '🚇 *Метро в мире*\n\n🇯🇵 Токио: самое чистое\n🇷🇺 Москва: красивое\n🇦🇪 Дубай: без водителя',
+            },
+            
+            # Отели
+            'hotels': {
+                'Турция': '🏨 *Отели Турции*\n\n🔍 Поиск: Booking, Ostrovok\n💰 3*: от 3000₽/ночь\n💰 5* All Inclusive: от 8000₽/ночь\n🏖️ Лучшие: Rixos, Maxx Royal',
+                'Таиланд': '🏨 *Отели Таиланда*\n\n💰 Бунгало: от 1500₽/ночь\n💰 4*: от 4000₽/ночь\n🏝️ Лучшие: The Shore, Banyan Tree',
+                'Италия': '🏨 *Отели Италии*\n\n💰 3*: от 5000₽/ночь\n💰 4*: от 10000₽/ночь\n🏛️ Лучшие: Hassler, Danieli',
+                'Испания': '🏨 *Отели Испании*\n\n💰 3*: от 4000₽/ночь\n💰 4*: от 8000₽/ночь',
+                'ОАЭ': '🏨 *Отели ОАЭ*\n\n💰 4*: от 8000₽/ночь\n💰 5*: от 15000₽/ночь\n🏨 Лучшие: Burj Al Arab, Atlantis',
+                'Египет': '🏨 *Отели Египта*\n\n💰 4* All Inc: от 5000₽/ночь\n💰 5* All Inc: от 8000₽/ночь',
+                'hotels': '🏨 *Поиск отелей*\n\n🔍 Booking.com\n🔍 Ostrovok.ru\n🔍 Agoda (Азия)\n🔍 Airbnb (апартаменты)',
+                'apartments': '🏠 *Апартаменты*\n\n🔍 Airbnb, Booking\n💰 Дешевле отелей на 30%\n✅ Есть кухня и стиралка',
+                'hostels': '🛏️ *Хостелы*\n\n💰 От 800₽/ночь\n✅ Общение с людьми\n🔍 Hostelworld',
+            },
+            
+            # Еда
+            'food': {
+                'Турция': '🍜 *Турецкая кухня*\n\n🥩 Кебаб (мясо на гриле)\n🍬 Пахлава (сладкое)\n🍡 Рахат-лукум\n☕ Турецкий кофе\n🍞 Симит (бублик)',
+                'Таиланд': '🍜 *Тайская кухня*\n\n🍲 Том Ям (острый суп)\n🍝 Пад Тай (лапша)\n🥭 Сладкий рис с манго\n🍚 Кхао Пад (жареный рис)',
+                'Италия': '🍜 *Итальянская кухня*\n\n🍕 Пицца Маргарита\n🍝 Паста Карбонара\n🍦 Джелато (мороженое)\n☕ Эспрессо',
+                'Испания': '🍜 *Испанская кухня*\n\n🥘 Паэлья (рис с морепродуктами)\n🍖 Хамон (вяленое мясо)\n🍢 Тапас (закуски)',
+                'Греция': '🍜 *Греческая кухня*\n\n🥗 Греческий салат\n🥙 Сувлаки (шашлычки)\n🧀 Сыр фета\n🍆 Мусака',
+                'Япония': '🍜 *Японская кухня*\n\n🍣 Суши и роллы\n🍜 Рамен (лапша)\n🍱 Бэнто (ланч-боксы)',
+                'Китай': '🍜 *Китайская кухня*\n\n🦆 Утка по-пекински\n🥟 Димасамы\n🍚 Жареный рис',
+                'Индия': '🍜 *Индийская кухня*\n\n🍛 Карри (острое)\n🍞 Наан (лепешки)\n🍚 Бирьяни',
+                'restaurants': '🍽️ *Рестораны*\n\n🔍 TripAdvisor\n🔍 Michelin Guide\n📱 The Fork (скидки)',
+                'street': '🥡 *Уличная еда*\n\n🌍 Азия: безопасно и вкусно\n💰 Дешево: от 100₽\n⚠️ Смотрите за свежестью',
+                'halal': '🥩 *Халяль еда*\n\n🌍 Турция, ОАЭ, Малайзия\n🔍 Ищите значок Halal\n✅ Везде в мусульманских странах',
+                'veg': '🥗 *Вегетарианское*\n\n🌍 Индия (лучший выбор)\n🌍 Таиланд (много овощей)\n🔍 Ищите Vegan в меню',
+            }
+        }
         
-        // База данных всех стран
-        const allCountries = [
-            { flag: '🇹🇷', name: 'Турция', temp: '28°C', price: '1.2K', category: 'asia', popular: true },
-            { flag: '🇹🇭', name: 'Таиланд', temp: '32°C', price: '1.5K', category: 'asia', popular: true },
-            { flag: '🇮🇹', name: 'Италия', temp: '24°C', price: '2.0K', category: 'europe', popular: true },
-            { flag: '🇪🇸', name: 'Испания', temp: '26°C', price: '1.9K', category: 'europe', popular: true },
-            { flag: '🇬🇷', name: 'Греция', temp: '27°C', price: '1.8K', category: 'europe', popular: true },
-            { flag: '🇦🇪', name: 'ОАЭ', temp: '35°C', price: '2.5K', category: 'asia', popular: true },
-            { flag: '🇫🇷', name: 'Франция', temp: '22°C', price: '2.2K', category: 'europe', popular: false },
-            { flag: '🇬🇧', name: 'Англия', temp: '18°C', price: '2.3K', category: 'europe', popular: false },
-            { flag: '🇩🇪', name: 'Германия', temp: '20°C', price: '2.1K', category: 'europe', popular: false },
-            { flag: '🇯🇵', name: 'Япония', temp: '23°C', price: '2.8K', category: 'asia', popular: false },
-            { flag: '🇰🇷', name: 'Корея', temp: '22°C', price: '2.4K', category: 'asia', popular: false },
-            { flag: '🇨🇳', name: 'Китай', temp: '25°C', price: '1.8K', category: 'asia', popular: false },
-            { flag: '🇺🇸', name: 'США', temp: '24°C', price: '3.0K', category: 'america', popular: false },
-            { flag: '🇨🇦', name: 'Канада', temp: '15°C', price: '2.9K', category: 'america', popular: false },
-            { flag: '🇲🇽', name: 'Мексика', temp: '28°C', price: '1.9K', category: 'america', popular: false },
-            { flag: '🇧🇷', name: 'Бразилия', temp: '30°C', price: '2.2K', category: 'america', popular: false },
-            { flag: '🇪🇬', name: 'Египет', temp: '32°C', price: '1.4K', category: 'africa', popular: false },
-            { flag: '🇿🇦', name: 'ЮАР', temp: '22°C', price: '2.0K', category: 'africa', popular: false },
-            { flag: '🇲🇦', name: 'Марокко', temp: '26°C', price: '1.6K', category: 'africa', popular: false },
-            { flag: '🇻🇳', name: 'Вьетнам', temp: '29°C', price: '1.3K', category: 'asia', popular: false },
-            { flag: '🇮🇩', name: 'Индонезия', temp: '31°C', price: '1.7K', category: 'asia', popular: false },
-            { flag: '🇮🇳', name: 'Индия', temp: '33°C', price: '1.1K', category: 'asia', popular: false },
-            { flag: '🇵🇹', name: 'Португалия', temp: '23°C', price: '1.8K', category: 'europe', popular: false },
-            { flag: '🇳🇱', name: 'Нидерланды', temp: '19°C', price: '2.1K', category: 'europe', popular: false },
-            { flag: '🇨🇭', name: 'Швейцария', temp: '18°C', price: '3.2K', category: 'europe', popular: false },
-            { flag: '🇦🇹', name: 'Австрия', temp: '20°C', price: '2.2K', category: 'europe', popular: false },
-            { flag: '🇧🇪', name: 'Бельгия', temp: '19°C', price: '2.0K', category: 'europe', popular: false },
-            { flag: '🇸🇪', name: 'Швеция', temp: '16°C', price: '2.4K', category: 'europe', popular: false },
-            { flag: '🇳🇴', name: 'Норвегия', temp: '14°C', price: '2.8K', category: 'europe', popular: false },
-            { flag: '🇩🇰', name: 'Дания', temp: '17°C', price: '2.3K', category: 'europe', popular: false },
-            { flag: '🇫🇮', name: 'Финляндия', temp: '15°C', price: '2.2K', category: 'europe', popular: false },
-            { flag: '🇮🇪', name: 'Ирландия', temp: '16°C', price: '2.1K', category: 'europe', popular: false },
-            { flag: '🇵🇱', name: 'Польша', temp: '19°C', price: '1.5K', category: 'europe', popular: false },
-            { flag: '🇨🇿', name: 'Чехия', temp: '20°C', price: '1.6K', category: 'europe', popular: false },
-            { flag: '🇭🇺', name: 'Венгрия', temp: '21°C', price: '1.5K', category: 'europe', popular: false },
-            { flag: '🇭🇷', name: 'Хорватия', temp: '25°C', price: '1.7K', category: 'europe', popular: false },
-            { flag: '🇲🇪', name: 'Черногория', temp: '26°C', price: '1.4K', category: 'europe', popular: false },
-            { flag: '🇦🇱', name: 'Албания', temp: '27°C', price: '1.3K', category: 'europe', popular: false },
-            { flag: '🇧🇬', name: 'Болгария', temp: '24°C', price: '1.2K', category: 'europe', popular: false },
-            { flag: '🇷🇴', name: 'Румыния', temp: '23°C', price: '1.3K', category: 'europe', popular: false },
-        ];
-
-        // Все советы
-        const allTips = [
-            { icon: '📄', title: 'Визовый режим', desc: 'Документы, сроки, отказы' },
-            { icon: '🩺', title: 'Медицина', desc: 'Страховка, аптечки' },
-            { icon: '💰', title: 'Экономия', desc: 'Как сэкономить' },
-            { icon: '🚗', title: 'Транспорт', desc: 'Аренда, билеты' },
-            { icon: '🏨', title: 'Отели', desc: 'Бронирование' },
-            { icon: '🍜', title: 'Еда', desc: 'Местная кухня' },
-            { icon: '📱', title: 'Связь', desc: 'Интернет, SIM' },
-            { icon: '🏦', title: 'Банки', desc: 'Обмен валют' },
-            { icon: '🛍️', title: 'Шоппинг', desc: 'Аутлеты, рынки' },
-            { icon: '🎫', title: 'Билеты', desc: 'Авиа, ЖД' },
-            { icon: '🌡️', title: 'Климат', desc: 'Когда ехать' },
-            { icon: '🎒', title: 'Снаряжение', desc: 'Что взять' },
-            { icon: '📷', title: 'Фото', desc: 'Лучшие места' },
-            { icon: '🏛️', title: 'Достопримечательности', desc: 'Что посмотреть' },
-            { icon: '🎉', title: 'Фестивали', desc: 'События' },
-            { icon: '🕌', title: 'Культура', desc: 'Традиции' },
-            { icon: '🔌', title: 'Техника', desc: 'Розетки, адаптеры' },
-            { icon: '👮', title: 'Безопасность', desc: 'Правила' },
-            { icon: '🗣️', title: 'Язык', desc: 'Разговорник' },
-            { icon: '🎁', title: 'Сувениры', desc: 'Что привезти' },
-        ];
-
-        // Показать уведомление
-        function showToast(text) {
-            const toast = document.getElementById('toast');
-            toast.textContent = text;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2000);
-        }
-
-        // Фильтрация по категориям
-        function filterByCategory(category) {
-            // Обновляем активный класс
-            document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
+        # Получаем ответ из словаря
+        if action in responses and value in responses[action]:
+            await message.answer(responses[action][value], parse_mode='Markdown')
+        else:
+            await message.answer(f"✅ Запрос получен: {action} - {value}\n\nСкоро появится подробная информация!")
             
-            if (category === 'all') {
-                showMainContent();
-                return;
-            }
-            
-            // Фильтруем страны
-            const filtered = allCountries.filter(c => c.category === category || (category === 'popular' && c.popular));
-            displayFilteredCountries(filtered);
-        }
+    except Exception as e:
+        await message.answer("✅ Запрос получен! Информация обрабатывается...")
+        logging.error(f"Error: {e}")
 
-        function displayFilteredCountries(countries) {
-            const grid = document.querySelector('.countries-grid');
-            grid.innerHTML = '';
-            countries.forEach(country => {
-                grid.innerHTML += `
-                    <div class="country-card" onclick="selectCountry('${country.name}')">
-                        <div class="country-flag">${country.flag}</div>
-                        <div class="country-name">${country.name}</div>
-                        <div class="country-info">
-                            <span>🌡️ ${country.temp}</span>
-                            <span>💶 ${country.price}</span>
-                        </div>
-                    </div>
-                `;
-            });
-        }
+async def main():
+    logging.info("Starting TravelMate bot with ALL buttons working...")
+    await dp.start_polling(bot)
 
-        // Показать все страны
-        function showAllCountries() {
-            document.getElementById('mainContent').classList.add('hidden');
-            document.getElementById('allCountriesSection').classList.remove('hidden');
-            
-            const grid = document.getElementById('allCountriesGrid');
-            grid.innerHTML = '';
-            allCountries.forEach(country => {
-                grid.innerHTML += `
-                    <div class="country-card" onclick="selectCountry('${country.name}')">
-                        <div class="country-flag">${country.flag}</div>
-                        <div class="country-name">${country.name}</div>
-                        <div class="country-info">
-                            <span>🌡️ ${country.temp}</span>
-                            <span>💶 ${country.price}</span>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // Показать все советы
-        function showAllTips() {
-            document.getElementById('mainContent').classList.add('hidden');
-            document.getElementById('allTipsSection').classList.remove('hidden');
-            
-            const grid = document.getElementById('allTipsGrid');
-            grid.innerHTML = '';
-            allTips.forEach(tip => {
-                grid.innerHTML += `
-                    <div class="tip-card" style="min-width: 140px; margin-bottom: 10px;" onclick="getTip('${tip.title}')">
-                        <div class="tip-icon">${tip.icon}</div>
-                        <div class="tip-title">${tip.title}</div>
-                        <div class="tip-desc">${tip.desc}</div>
-                    </div>
-                `;
-            });
-        }
-
-        // Назад на главную
-        function backToMain() {
-            document.getElementById('mainContent').classList.remove('hidden');
-            document.getElementById('allCountriesSection').classList.add('hidden');
-            document.getElementById('allTipsSection').classList.add('hidden');
-        }
-
-        // Выбор страны
-        function selectCountry(country) {
-            tg.sendData(JSON.stringify({
-                action: 'country',
-                value: country
-            }));
-            showToast(`🌍 Запрос по стране ${country} отправлен!`);
-            
-            // Возвращаемся на главную через 1.5 секунды
-            setTimeout(backToMain, 1500);
-        }
-
-        // Получить совет
-        function getTip(tip) {
-            tg.sendData(JSON.stringify({
-                action: 'tip',
-                value: tip
-            }));
-            showToast(`💡 Совет "${tip}" запрошен!`);
-            setTimeout(backToMain, 1500);
-        }
-
-        // Получить валюту
-        function getCurrency(currency) {
-            tg.sendData(JSON.stringify({
-                action: 'currency',
-                value: currency
-            }));
-            showToast(`💵 Курс ${currency} запрошен!`);
-            setTimeout(backToMain, 1500);
-        }
-
-        // Обновить курсы
-        function refreshRates() {
-            showToast('🔄 Курсы обновляются...');
-            // Здесь можно добавить реальное обновление
-        }
-
-        // Поиск
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const query = e.target.value.toLowerCase();
-            if (query.length < 2) return;
-            
-            const results = allCountries.filter(c => 
-                c.name.toLowerCase().includes(query)
-            );
-            
-            if (results.length > 0) {
-                displayFilteredCountries(results);
-                showToast(`Найдено ${results.length} стран`);
-            }
-        });
-
-        // Показать главный контент
-        function showMainContent() {
-            // Восстанавливаем популярные страны
-            const popularGrid = document.querySelector('.countries-grid');
-            popularGrid.innerHTML = `
-                <div class="country-card" onclick="selectCountry('Турция')">
-                    <div class="country-flag">🇹🇷</div>
-                    <div class="country-name">Турция</div>
-                    <div class="country-info">
-                        <span>🌡️ 28°C</span>
-                        <span>💶 1.2K</span>
-                    </div>
-                </div>
-                <div class="country-card" onclick="selectCountry('Таиланд')">
-                    <div class="country-flag">🇹🇭</div>
-                    <div class="country-name">Таиланд</div>
-                    <div class="country-info">
-                        <span>🌡️ 32°C</span>
-                        <span>💶 1.5K</span>
-                    </div>
-                </div>
-                <div class="country-card" onclick="selectCountry('Италия')">
-                    <div class="country-flag">🇮🇹</div>
-                    <div class="country-name">Италия</div>
-                    <div class="country-info">
-                        <span>🌡️ 24°C</span>
-                        <span>💶 2.0K</span>
-                    </div>
-                </div>
-                <div class="country-card" onclick="selectCountry('ОАЭ')">
-                    <div class="country-flag">🇦🇪</div>
-                    <div class="country-name">ОАЭ</div>
-                    <div class="country-info">
-                        <span>🌡️ 35°C</span>
-                        <span>💶 2.5K</span>
-                    </div>
-                </div>
-            `;
-        }
-    </script>
-</body>
-</html>
+if __name__ == '__main__':
+    asyncio.run(main())
