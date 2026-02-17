@@ -1,193 +1,615 @@
-import logging
-import json
-import os
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from aiogram.filters import Command
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from dotenv import load_dotenv
-import asyncio
-
-load_dotenv()
-
-API_TOKEN = os.getenv('BOT_TOKEN')
-logging.basicConfig(level=logging.INFO)
-
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher()
-
-@dp.message(Command('start'))
-async def start_command(message: types.Message):
-    builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(
-        text="🌍 Открыть TravelMate",
-        web_app=WebAppInfo(url="https://ilshatikv-maker.github.io/my_telegram_bot/web/?v=final")
-    ))
-    
-    await message.answer(
-        "👋 Добро пожаловать в TravelMate!\n\n"
-        "🎯 Теперь работают ВСЕ кнопки:\n"
-        "• Страны (15+ стран)\n"
-        "• Визы (Шенген, США, и т.д.)\n"
-        "• Страховки (все виды)\n"
-        "• Советы (20+ советов)\n"
-        "• Погода в странах\n"
-        "• Курсы валют (8 валют)\n"
-        "• Транспорт\n"
-        "• Отели\n"
-        "• Еда и кухня\n\n"
-        "👇 Нажми кнопку и проверь!",
-        reply_markup=builder.as_markup()
-    )
-
-@dp.message(lambda message: message.web_app_data)
-async def handle_web_app_data(message: types.Message):
-    try:
-        data = json.loads(message.web_app_data.data)
-        action = data.get('action')
-        value = data.get('value')
-        
-        # Обработка всех типов кнопок
-        responses = {
-            # Страны
-            'country': {
-                'Турция': '🇹🇷 *Турция*\n\n✅ Виза: без визы 60 дней\n💵 Валюта: лира (TRY)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Анталья, Кемер, Алания\n🍜 Кухня: кебаб, пахлава, рахат-лукум',
-                'Таиланд': '🇹🇭 *Таиланд*\n\n✅ Виза: 30 дней без визы\n💵 Валюта: бат (THB)\n🌡️ Погода: +28..+35°C\n🏖️ Курорты: Пхукет, Паттайя, Самуи\n🍜 Кухня: том ям, пад тай',
-                'Италия': '🇮🇹 *Италия*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +20..+30°C\n🏛️ Города: Рим, Венеция, Флоренция\n🍜 Кухня: пицца, паста, джелато',
-                'Испания': '🇪🇸 *Испания*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +22..+32°C\n🏖️ Курорты: Барселона, Коста-Брава\n🍜 Кухня: паэлья, хамон, тапас',
-                'Греция': '🇬🇷 *Греция*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +25..+35°C\n🏖️ Острова: Крит, Родос, Корфу\n🍜 Кухня: мусака, сувлаки, сыр фета',
-                'ОАЭ': '🇦🇪 *ОАЭ*\n\n✅ Виза: по прилету\n💵 Валюта: дирхам (AED)\n🌡️ Погода: +30..+40°C\n🏙️ Города: Дубай, Абу-Даби\n🛍️ Шоппинг: золото, техника',
-                'Франция': '🇫🇷 *Франция*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +18..+25°C\n🏛️ Города: Париж, Лион, Марсель\n🍜 Кухня: круассаны, сыры, вино',
-                'Германия': '🇩🇪 *Германия*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +15..+25°C\n🏰 Города: Берлин, Мюнхен, Гамбург\n🍜 Кухня: колбаски, шницель, пиво',
-                'Великобритания': '🇬🇧 *Великобритания*\n\n✅ Виза: UK Visa\n💵 Валюта: фунт (GBP)\n🌡️ Погода: +10..+20°C\n🏙️ Города: Лондон, Манчестер\n🍜 Кухня: fish and chips',
-                'Япония': '🇯🇵 *Япония*\n\n✅ Виза: нужна виза\n💵 Валюта: иена (JPY)\n🌡️ Погода: +15..+30°C\n🏯 Города: Токио, Киото, Осака\n🍜 Кухня: суши, рамен, темпура',
-                'Китай': '🇨🇳 *Китай*\n\n✅ Виза: нужна виза\n💵 Валюта: юань (CNY)\n🌡️ Погода: +10..+30°C\n🏯 Города: Пекин, Шанхай\n🍜 Кухня: утка по-пекински',
-                'Индия': '🇮🇳 *Индия*\n\n✅ Виза: e-Visa\n💵 Валюта: рупия (INR)\n🌡️ Погода: +25..+35°C\n🕌 Города: Дели, Мумбаи, Гоа\n🍜 Кухня: карри, наан',
-                'Египет': '🇪🇬 *Египет*\n\n✅ Виза: по прилету\n💵 Валюта: фунт (EGP)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Шарм-эль-Шейх, Хургада',
-                'Тунис': '🇹🇳 *Тунис*\n\n✅ Виза: без визы\n💵 Валюта: динар (TND)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Сусс, Хаммамет, Джерба',
-                'Мальдивы': '🇲🇻 *Мальдивы*\n\n✅ Виза: по прилету\n💵 Валюта: руфия (MVR)\n🌡️ Погода: +28..+32°C\n🏝️ Райские острова, овервотер бунгало',
-            },
-            
-            # Визы
-            'visa': {
-                'Шенген': '📄 *Шенгенская виза*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета\n• Фото 3.5x4.5\n• Страховка от 30k€\n• Брони отеля\n• Билеты\n• Справка с работы\n\n⏰ Срок: 5-10 раб дней\n💰 Стоимость: 80€',
-                'США': '📄 *Виза в США (B1/B2)*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета DS-160\n• Фото 5x5\n• Подтверждение оплаты\n• Запись на собеседование\n\n⏰ Срок: от 2 недель\n💰 Стоимость: 160$',
-                'Великобритания': '📄 *Виза в Великобританию*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета онлайн\n• Биометрия\n• Подтверждение доходов\n\n⏰ Срок: 3-4 недели\n💰 Стоимость: от 100£',
-                'Китай': '📄 *Виза в Китай*\n\n📋 Документы:\n• Загранпаспорт\n• Приглашение\n• Брони отеля\n• Билеты\n\n⏰ Срок: 4-5 дней\n💰 Стоимость: от 150$',
-                'Япония': '📄 *Виза в Японию*\n\n📋 Документы:\n• Загранпаспорт\n• Спонсорское письмо\n• Выписка со счета\n• План поездки\n\n⏰ Срок: 5-7 дней\n💰 Стоимость: от 3000₽',
-                'Индия': '📄 *Электронная виза в Индию*\n\n✅ Оформляется онлайн\n📋 Нужен загранпаспорт и фото\n⏰ Срок: 3-5 дней\n💰 Стоимость: от 80$',
-                'Турция': '📄 *Виза в Турцию*\n\n✅ Без визы до 60 дней\n✅ Нужен только загранпаспорт',
-                'ОАЭ': '📄 *Виза в ОАЭ*\n\n✅ По прилету на 30 дней\n💰 Стоимость: бесплатно',
-                'документы': '📋 *Общий список документов*\n\n• Загранпаспорт (срок действия 6 мес)\n• Копия паспорта РФ\n• Фото 3.5x4.5 (матовая)\n• Мед страховка\n• Подтверждение доходов\n• Брони отелей\n• Авиабилеты',
-                'сроки': '⏰ *Сроки оформления*\n\n• Шенген: 5-10 дней\n• США: 2-4 недели\n• Великобритания: 3 недели\n• Азия: 3-7 дней\n• Срочные визы: 1-3 дня',
-                'стоимость': '💰 *Стоимость виз*\n\n• Шенген: 80€\n• США: 160$\n• Великобритания: 100£\n• Китай: 150$\n• Япония: 3000₽\n• Индия: 80$',
-            },
-            
-            # Страховки
-            'insurance': {
-                'Турция': '🩺 *Страховка в Турцию*\n\n🔵 Базовая: от 500₽/день\n🔵 Расширенная: от 800₽/день\n⚽ Спортивная: от 1200₽/день\n\n✅ Покрытие: от 30k€\n✅ Телемедицина 24/7\n✅ Прямая оплата',
-                'Таиланд': '🩺 *Страховка в Таиланд*\n\n🔵 Базовая: от 600₽/день\n🔵 Расширенная: от 900₽/день\n⚽ Спортивная: от 1500₽/день\n\n⚠️ Обязательна страховка от COVID',
-                'Италия': '🩺 *Страховка в Италию*\n\n🔵 Базовая: от 550₽/день\n🔵 Расширенная: от 850₽/день\n⚽ Спортивная: от 1300₽/день\n\n✅ Для Шенгена обязательно',
-                'Испания': '🩺 *Страховка в Испанию*\n\n🔵 Базовая: от 550₽/день\n🔵 Расширенная: от 850₽/день\n⚽ Спортивная: от 1300₽/день',
-                'США': '🩺 *Страховка в США*\n\n🔵 Базовая: от 1500₽/день\n🔵 Расширенная: от 2500₽/день\n\n⚠️ Медицина в США дорогая',
-                'ОАЭ': '🩺 *Страховка в ОАЭ*\n\n🔵 Базовая: от 500₽/день\n🔵 Расширенная: от 800₽/день',
-                'базовая': '🟢 *Базовая страховка*\n\n✅ Покрытие: 30k€\n✅ Амбулаторное лечение\n✅ Экстренная госпитализация\n✅ Транспортировка\n\n💰 Цена: от 500₽/день',
-                'расширенная': '🔵 *Расширенная страховка*\n\n✅ Покрытие: 50k€\n✅ Всё из базовой\n✅ Стоматология\n✅ Посещение родственников\n✅ Юридическая помощь\n\n💰 Цена: от 800₽/день',
-                'спорт': '⚽ *Спортивная страховка*\n\n✅ Покрытие: 50k€\n✅ Экстремальные виды спорта\n✅ Травмы при занятиях\n✅ Горные лыжи/дайвинг\n\n💰 Цена: от 1200₽/день',
-                'отмена': '✈️ *Страховка от отмены*\n\n✅ Отмена поездки\n✅ Задержка рейса\n✅ Потеря багажа\n\n💰 Цена: от 300₽/день',
-            },
-            
-            # Советы
-            'tip': {
-                'visa': '💡 *Советы по визе*\n\n📌 Подавайтесь за 2-3 месяца\n📌 Все документы переведите\n📌 Сделайте качественные фото\n📌 Страховка обязательна\n📌 Имейте подтверждение доходов',
-                'insurance': '💡 *Советы по страховке*\n\n📌 Берите покрытие от 30k€\n📌 Для активного отдыха - спорт\n📌 Проверьте франшизу\n📌 Сохраните номер ассистанса',
-                'money': '💡 *Как экономить*\n\n📌 Ловите акции авиакомпаний\n📌 Отели бронируйте заранее\n📌 Меняйте валюту не в аэропорту\n📌 Покупайте местную симку\n📌 Ешьте там, где местные',
-                'packing': '💡 *Что взять с собой*\n\n📌 Паспорт и документы\n📌 Страховка\n📌 Деньги и карты\n📌 Зарядки и адаптеры\n📌 Аптечка\n📌 Удобная обувь',
-                'safety': '💡 *Правила безопасности*\n\n📌 Копии документов отдельно\n📌 Не носите все деньги с собой\n📌 Сейф в отеле\n📌 Скачайте карты офлайн',
-                'language': '💡 *Разговорник*\n\n• Hello - Здравствуйте\n• Thank you - Спасибо\n• How much - Сколько стоит\n• Help - Помогите\n• Where is - Где находится',
-                'transport': '💡 *Аренда авто*\n\n📌 Нужны права (международные)\n📌 Залог замораживают на карте\n📌 Фото машины при получении\n📌 Страховка обязательна',
-                'hotels': '💡 *Выбор отеля*\n\n📌 Читайте свежие отзывы\n📌 Смотрите расположение\n📌 Завтраки включены?\n📌 Трансфер от отеля',
-                'food': '💡 *Местная кухня*\n\n📌 Пробуйте уличную еду\n📌 Спросите у местных\n📌 Осторожно с острой едой\n📌 Пейте бутилированную воду',
-                'photo': '💡 *Лучшие места для фото*\n\n📌 Ищите смотровые площадки\n📌 Фото на рассвете/закате\n📌 Местные жители колоритны\n📌 Уличные рынки',
-            },
-            
-            # Погода
-            'weather': {
-                'Турция': '🌤️ *Погода в Турции*\n\n🇹🇷 Анталья: +28°C, солнечно\n🇹🇷 Стамбул: +24°C, переменная облачность\n🇹🇷 Кемер: +29°C, ясно\n\n💧 Влажность: 60%\n🌬️ Ветер: 5 м/с',
-                'Таиланд': '🌤️ *Погода в Таиланде*\n\n🇹🇭 Пхукет: +32°C, солнечно\n🇹🇭 Паттайя: +31°C, ясно\n🇹🇭 Самуи: +30°C, небольшие облака\n\n💧 Влажность: 75%',
-                'Италия': '🌤️ *Погода в Италии*\n\n🇮🇹 Рим: +24°C, ясно\n🇮🇹 Венеция: +22°C, облачно\n🇮🇹 Флоренция: +23°C, солнечно',
-                'Испания': '🌤️ *Погода в Испании*\n\n🇪🇸 Барселона: +26°C, солнечно\n🇪🇸 Мадрид: +28°C, ясно\n🇪🇸 Коста-Брава: +25°C',
-                'Греция': '🌤️ *Погода в Греции*\n\n🇬🇷 Афины: +27°C, ясно\n🇬🇷 Крит: +28°C, солнечно\n🇬🇷 Родос: +27°C',
-                'ОАЭ': '🌤️ *Погода в ОАЭ*\n\n🇦🇪 Дубай: +35°C, солнечно\n🇦🇪 Абу-Даби: +36°C, ясно\n\n💧 Влажность: 50%',
-                'Египет': '🌤️ *Погода в Египте*\n\n🇪🇬 Шарм-эль-Шейх: +32°C, солнечно\n🇪🇬 Хургада: +31°C, ясно',
-                'Мальдивы': '🌤️ *Погода на Мальдивах*\n\n🇲🇻 Мале: +30°C, переменная облачность\n🌊 Вода: +28°C',
-            },
-            
-            # Валюта
-            'currency': {
-                'USD': '💵 *Доллар США (USD)*\n\n🇺🇸 1 USD = 91.45 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: +0.23',
-                'EUR': '💵 *Евро (EUR)*\n\n🇪🇺 1 EUR = 98.76 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: +0.15',
-                'TRY': '💵 *Турецкая лира (TRY)*\n\n🇹🇷 1 TRY = 2.84 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: -0.05',
-                'THB': '💵 *Тайский бат (THB)*\n\n🇹🇭 1 THB = 2.52 RUB\n💰 Курс ЦБ РФ',
-                'AED': '💵 *Дирхам ОАЭ (AED)*\n\n🇦🇪 1 AED = 24.90 RUB\n💰 Курс ЦБ РФ',
-                'GBP': '💵 *Фунт стерлингов (GBP)*\n\n🇬🇧 1 GBP = 115.30 RUB\n💰 Курс ЦБ РФ',
-                'CNY': '💵 *Китайский юань (CNY)*\n\n🇨🇳 1 CNY = 12.65 RUB\n💰 Курс ЦБ РФ',
-                'JPY': '💵 *Японская иена (JPY)*\n\n🇯🇵 100 JPY = 61.00 RUB\n💰 Курс ЦБ РФ',
-            },
-            
-            # Транспорт
-            'transport': {
-                'aviasales': '✈️ *Авиабилеты*\n\n🔍 Поиск: Aviasales, Skyscanner\n💰 Москва-Анталья: от 15000₽\n💰 Москва-Бангкок: от 35000₽\n📆 Лучшие дни для покупки: вторник',
-                'train': '🚂 *Поезда*\n\n🇪🇺 Европа: Interrail, Eurail\n🇷🇺 РЖД: туристические маршруты\n💰 Москва-Питер: от 1500₽',
-                'bus': '🚌 *Автобусы*\n\n🌍 FlixBus (Европа)\n🌍 Local buses (Азия)\n💰 Дешевле поездов на 30%',
-                'rental': '🚗 *Аренда авто*\n\n🔍 Поиск: Rentalcars, Economybookings\n💰 Аренда: от 20€/день\n📋 Нужны права и карта',
-                'taxi': '🚕 *Такси*\n\n🌍 Uber, Bolt, Yandex Taxi\n💰 В Азии дешево\n📱 Скачайте приложения',
-                'metro': '🚇 *Метро в мире*\n\n🇯🇵 Токио: самое чистое\n🇷🇺 Москва: красивое\n🇦🇪 Дубай: без водителя',
-            },
-            
-            # Отели
-            'hotels': {
-                'Турция': '🏨 *Отели Турции*\n\n🔍 Поиск: Booking, Ostrovok\n💰 3*: от 3000₽/ночь\n💰 5* All Inclusive: от 8000₽/ночь\n🏖️ Лучшие: Rixos, Maxx Royal',
-                'Таиланд': '🏨 *Отели Таиланда*\n\n💰 Бунгало: от 1500₽/ночь\n💰 4*: от 4000₽/ночь\n🏝️ Лучшие: The Shore, Banyan Tree',
-                'Италия': '🏨 *Отели Италии*\n\n💰 3*: от 5000₽/ночь\n💰 4*: от 10000₽/ночь\n🏛️ Лучшие: Hassler, Danieli',
-                'Испания': '🏨 *Отели Испании*\n\n💰 3*: от 4000₽/ночь\n💰 4*: от 8000₽/ночь',
-                'ОАЭ': '🏨 *Отели ОАЭ*\n\n💰 4*: от 8000₽/ночь\n💰 5*: от 15000₽/ночь\n🏨 Лучшие: Burj Al Arab, Atlantis',
-                'Египет': '🏨 *Отели Египта*\n\n💰 4* All Inc: от 5000₽/ночь\n💰 5* All Inc: от 8000₽/ночь',
-                'hotels': '🏨 *Поиск отелей*\n\n🔍 Booking.com\n🔍 Ostrovok.ru\n🔍 Agoda (Азия)\n🔍 Airbnb (апартаменты)',
-                'apartments': '🏠 *Апартаменты*\n\n🔍 Airbnb, Booking\n💰 Дешевле отелей на 30%\n✅ Есть кухня и стиралка',
-                'hostels': '🛏️ *Хостелы*\n\n💰 От 800₽/ночь\n✅ Общение с людьми\n🔍 Hostelworld',
-            },
-            
-            # Еда
-            'food': {
-                'Турция': '🍜 *Турецкая кухня*\n\n🥩 Кебаб (мясо на гриле)\n🍬 Пахлава (сладкое)\n🍡 Рахат-лукум\n☕ Турецкий кофе\n🍞 Симит (бублик)',
-                'Таиланд': '🍜 *Тайская кухня*\n\n🍲 Том Ям (острый суп)\n🍝 Пад Тай (лапша)\n🥭 Сладкий рис с манго\n🍚 Кхао Пад (жареный рис)',
-                'Италия': '🍜 *Итальянская кухня*\n\n🍕 Пицца Маргарита\n🍝 Паста Карбонара\n🍦 Джелато (мороженое)\n☕ Эспрессо',
-                'Испания': '🍜 *Испанская кухня*\n\n🥘 Паэлья (рис с морепродуктами)\n🍖 Хамон (вяленое мясо)\n🍢 Тапас (закуски)',
-                'Греция': '🍜 *Греческая кухня*\n\n🥗 Греческий салат\n🥙 Сувлаки (шашлычки)\n🧀 Сыр фета\n🍆 Мусака',
-                'Япония': '🍜 *Японская кухня*\n\n🍣 Суши и роллы\n🍜 Рамен (лапша)\n🍱 Бэнто (ланч-боксы)',
-                'Китай': '🍜 *Китайская кухня*\n\n🦆 Утка по-пекински\n🥟 Димасамы\n🍚 Жареный рис',
-                'Индия': '🍜 *Индийская кухня*\n\n🍛 Карри (острое)\n🍞 Наан (лепешки)\n🍚 Бирьяни',
-                'restaurants': '🍽️ *Рестораны*\n\n🔍 TripAdvisor\n🔍 Michelin Guide\n📱 The Fork (скидки)',
-                'street': '🥡 *Уличная еда*\n\n🌍 Азия: безопасно и вкусно\n💰 Дешево: от 100₽\n⚠️ Смотрите за свежестью',
-                'halal': '🥩 *Халяль еда*\n\n🌍 Турция, ОАЭ, Малайзия\n🔍 Ищите значок Halal\n✅ Везде в мусульманских странах',
-                'veg': '🥗 *Вегетарианское*\n\n🌍 Индия (лучший выбор)\n🌍 Таиланд (много овощей)\n🔍 Ищите Vegan в меню',
-            }
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate - Все кнопки работают</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
-        
-        # Получаем ответ из словаря
-        if action in responses and value in responses[action]:
-            await message.answer(responses[action][value], parse_mode='Markdown')
-        else:
-            await message.answer(f"✅ Запрос получен: {action} - {value}\n\nСкоро появится подробная информация!")
+
+        body {
+            background: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000000);
+            min-height: 100vh;
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Заголовок */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        /* Категории */
+        .categories {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .category-btn {
+            background: var(--tg-theme-secondary-bg-color, white);
+            padding: 10px 20px;
+            border-radius: 25px;
+            white-space: nowrap;
+            font-weight: 600;
+            font-size: 14px;
+            color: #667eea;
+            border: 1px solid #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .category-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .category-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Секции */
+        .section {
+            background: var(--tg-theme-secondary-bg-color, white);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        /* Сетка кнопок */
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 15px 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+        }
+
+        .action-btn.small {
+            padding: 12px 8px;
+            font-size: 13px;
+        }
+
+        /* Список стран */
+        .countries-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .country-item {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 12px 5px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .country-item:active {
+            background: #667eea;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        /* Советы */
+        .tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tip-item {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tip-item:active {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .tip-icon {
+            font-size: 24px;
+        }
+
+        .tip-text {
+            font-weight: 600;
+        }
+
+        /* Валюты */
+        .currency-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .currency-item {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .currency-item:active {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .currency-name {
+            font-weight: 600;
+        }
+
+        .currency-rate {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        /* Погода */
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .weather-item {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .weather-item:active {
+            background: #667eea;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .weather-temp {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 5px 0;
+        }
+
+        /* Уведомление */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <div class="header">
+            <h1>🌍 TravelMate</h1>
+            <p>Все кнопки работают! Нажимай смело 👇</p>
+        </div>
+
+        <!-- Категории -->
+        <div class="categories">
+            <div class="category-btn active" onclick="showSection('countries')">🌍 Страны</div>
+            <div class="category-btn" onclick="showSection('visa')">📄 Виза</div>
+            <div class="category-btn" onclick="showSection('insurance')">🩺 Страховка</div>
+            <div class="category-btn" onclick="showSection('tips')">💡 Советы</div>
+            <div class="category-btn" onclick="showSection('weather')">🌤️ Погода</div>
+            <div class="category-btn" onclick="showSection('currency')">💵 Валюта</div>
+            <div class="category-btn" onclick="showSection('transport')">🚗 Транспорт</div>
+            <div class="category-btn" onclick="showSection('hotels')">🏨 Отели</div>
+            <div class="category-btn" onclick="showSection('food')">🍜 Еда</div>
+        </div>
+
+        <!-- Секция: Все страны -->
+        <div id="countries-section" class="section">
+            <div class="section-title">🌍 Выбери страну</div>
+            <div class="countries-list">
+                <div class="country-item" onclick="selectCountry('Турция')">🇹🇷 Турция</div>
+                <div class="country-item" onclick="selectCountry('Таиланд')">🇹🇭 Таиланд</div>
+                <div class="country-item" onclick="selectCountry('Италия')">🇮🇹 Италия</div>
+                <div class="country-item" onclick="selectCountry('Испания')">🇪🇸 Испания</div>
+                <div class="country-item" onclick="selectCountry('Греция')">🇬🇷 Греция</div>
+                <div class="country-item" onclick="selectCountry('ОАЭ')">🇦🇪 ОАЭ</div>
+                <div class="country-item" onclick="selectCountry('Франция')">🇫🇷 Франция</div>
+                <div class="country-item" onclick="selectCountry('Германия')">🇩🇪 Германия</div>
+                <div class="country-item" onclick="selectCountry('Великобритания')">🇬🇧 Великобритания</div>
+                <div class="country-item" onclick="selectCountry('Япония')">🇯🇵 Япония</div>
+                <div class="country-item" onclick="selectCountry('Китай')">🇨🇳 Китай</div>
+                <div class="country-item" onclick="selectCountry('Индия')">🇮🇳 Индия</div>
+                <div class="country-item" onclick="selectCountry('Египет')">🇪🇬 Египет</div>
+                <div class="country-item" onclick="selectCountry('Тунис')">🇹🇳 Тунис</div>
+                <div class="country-item" onclick="selectCountry('Мальдивы')">🇲🇻 Мальдивы</div>
+            </div>
+        </div>
+
+        <!-- Секция: Оформление визы -->
+        <div id="visa-section" class="section hidden">
+            <div class="section-title">📄 Оформление визы</div>
+            <div class="buttons-grid">
+                <div class="action-btn" onclick="getVisaInfo('Шенген')">🇪🇺 Шенген</div>
+                <div class="action-btn" onclick="getVisaInfo('США')">🇺🇸 США</div>
+                <div class="action-btn" onclick="getVisaInfo('Великобритания')">🇬🇧 Великобритания</div>
+                <div class="action-btn" onclick="getVisaInfo('Китай')">🇨🇳 Китай</div>
+                <div class="action-btn" onclick="getVisaInfo('Япония')">🇯🇵 Япония</div>
+                <div class="action-btn" onclick="getVisaInfo('Индия')">🇮🇳 Индия</div>
+                <div class="action-btn" onclick="getVisaInfo('Турция')">🇹🇷 Турция</div>
+                <div class="action-btn" onclick="getVisaInfo('ОАЭ')">🇦🇪 ОАЭ</div>
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="action-btn small" onclick="getVisaInfo('документы')">📋 Список документов</div>
+                <div class="action-btn small" onclick="getVisaInfo('сроки')">⏰ Сроки оформления</div>
+                <div class="action-btn small" onclick="getVisaInfo('стоимость')">💰 Стоимость</div>
+            </div>
+        </div>
+
+        <!-- Секция: Страховка -->
+        <div id="insurance-section" class="section hidden">
+            <div class="section-title">🩺 Медицинская страховка</div>
+            <div class="buttons-grid">
+                <div class="action-btn" onclick="getInsurance('Турция')">🇹🇷 Турция</div>
+                <div class="action-btn" onclick="getInsurance('Таиланд')">🇹🇭 Таиланд</div>
+                <div class="action-btn" onclick="getInsurance('Италия')">🇮🇹 Италия</div>
+                <div class="action-btn" onclick="getInsurance('Испания')">🇪🇸 Испания</div>
+                <div class="action-btn" onclick="getInsurance('США')">🇺🇸 США</div>
+                <div class="action-btn" onclick="getInsurance('ОАЭ')">🇦🇪 ОАЭ</div>
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="action-btn small" onclick="getInsurance('базовая')">🟢 Базовая</div>
+                <div class="action-btn small" onclick="getInsurance('расширенная')">🔵 Расширенная</div>
+                <div class="action-btn small" onclick="getInsurance('спорт')">⚽ Спортивная</div>
+                <div class="action-btn small" onclick="getInsurance('отмена')">✈️ Отмена поездки</div>
+            </div>
+        </div>
+
+        <!-- Секция: Советы -->
+        <div id="tips-section" class="section hidden">
+            <div class="section-title">💡 Полезные советы</div>
+            <div class="tips-list">
+                <div class="tip-item" onclick="getTip('visa')">
+                    <span class="tip-icon">📄</span>
+                    <span class="tip-text">Как получить визу быстро</span>
+                </div>
+                <div class="tip-item" onclick="getTip('insurance')">
+                    <span class="tip-icon">🩺</span>
+                    <span class="tip-text">Как выбрать страховку</span>
+                </div>
+                <div class="tip-item" onclick="getTip('money')">
+                    <span class="tip-icon">💰</span>
+                    <span class="tip-text">Как экономить в путешествиях</span>
+                </div>
+                <div class="tip-item" onclick="getTip('packing')">
+                    <span class="tip-icon">🎒</span>
+                    <span class="tip-text">Что взять с собой</span>
+                </div>
+                <div class="tip-item" onclick="getTip('safety')">
+                    <span class="tip-icon">🛡️</span>
+                    <span class="tip-text">Правила безопасности</span>
+                </div>
+                <div class="tip-item" onclick="getTip('language')">
+                    <span class="tip-icon">🗣️</span>
+                    <span class="tip-text">Разговорник для туристов</span>
+                </div>
+                <div class="tip-item" onclick="getTip('transport')">
+                    <span class="tip-icon">🚗</span>
+                    <span class="tip-text">Как арендовать авто</span>
+                </div>
+                <div class="tip-item" onclick="getTip('hotels')">
+                    <span class="tip-icon">🏨</span>
+                    <span class="tip-text">Как выбрать отель</span>
+                </div>
+                <div class="tip-item" onclick="getTip('food')">
+                    <span class="tip-icon">🍜</span>
+                    <span class="tip-text">Местная кухня: что попробовать</span>
+                </div>
+                <div class="tip-item" onclick="getTip('photo')">
+                    <span class="tip-icon">📷</span>
+                    <span class="tip-text">Лучшие места для фото</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция: Погода -->
+        <div id="weather-section" class="section hidden">
+            <div class="section-title">🌤️ Погода в странах</div>
+            <div class="weather-grid">
+                <div class="weather-item" onclick="getWeather('Турция')">
+                    <div>🇹🇷 Турция</div>
+                    <div class="weather-temp">+28°C</div>
+                </div>
+                <div class="weather-item" onclick="getWeather('Таиланд')">
+                    <div>🇹🇭 Таиланд</div>
+                    <div class="weather-temp">+32°C</div>
+                </div>
+                <div class="weather-item" onclick="getWeather('Италия')">
+                    <div>🇮🇹 Италия</div>
+                    <div class="weather-temp">+24°C</div>
+                </div>
+                <div class="weather-item" onclick="getWeather('Испания')">
+                    <div>🇪🇸 Испания</div>
+                    <div class="weather-temp">+26°C</div>
+                </div>
+                <div class="weather-item" onclick="getWeather('Греция')">
+                    <div>🇬🇷 Греция</div>
+                    <div class="weather-temp">+27°C</div>
+                </div>
+                <div class="weather-item" onclick="getWeather('ОАЭ')">
+                    <div>🇦🇪 ОАЭ</div>
+                    <div class="weather-temp">+35°C</div>
+                </div>
+                <div class="weather-item" onclick="getWeather('Египет')">
+                    <div>🇪🇬 Египет</div>
+                    <div class="weather-temp">+32°C</div>
+                </div>
+                <div class="weather-item" onclick="getWeather('Мальдивы')">
+                    <div>🇲🇻 Мальдивы</div>
+                    <div class="weather-temp">+30°C</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция: Валюта -->
+        <div id="currency-section" class="section hidden">
+            <div class="section-title">💵 Курсы валют</div>
+            <div class="currency-list">
+                <div class="currency-item" onclick="getCurrency('USD')">
+                    <span class="currency-name">🇺🇸 Доллар (USD)</span>
+                    <span class="currency-rate">91.45 ₽</span>
+                </div>
+                <div class="currency-item" onclick="getCurrency('EUR')">
+                    <span class="currency-name">🇪🇺 Евро (EUR)</span>
+                    <span class="currency-rate">98.76 ₽</span>
+                </div>
+                <div class="currency-item" onclick="getCurrency('TRY')">
+                    <span class="currency-name">🇹🇷 Лира (TRY)</span>
+                    <span class="currency-rate">2.84 ₽</span>
+                </div>
+                <div class="currency-item" onclick="getCurrency('THB')">
+                    <span class="currency-name">🇹🇭 Бат (THB)</span>
+                    <span class="currency-rate">2.52 ₽</span>
+                </div>
+                <div class="currency-item" onclick="getCurrency('AED')">
+                    <span class="currency-name">🇦🇪 Дирхам (AED)</span>
+                    <span class="currency-rate">24.90 ₽</span>
+                </div>
+                <div class="currency-item" onclick="getCurrency('GBP')">
+                    <span class="currency-name">🇬🇧 Фунт (GBP)</span>
+                    <span class="currency-rate">115.30 ₽</span>
+                </div>
+                <div class="currency-item" onclick="getCurrency('CNY')">
+                    <span class="currency-name">🇨🇳 Юань (CNY)</span>
+                    <span class="currency-rate">12.65 ₽</span>
+                </div>
+                <div class="currency-item" onclick="getCurrency('JPY')">
+                    <span class="currency-name">🇯🇵 Иена (JPY)</span>
+                    <span class="currency-rate">0.61 ₽</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция: Транспорт -->
+        <div id="transport-section" class="section hidden">
+            <div class="section-title">🚗 Транспорт</div>
+            <div class="buttons-grid">
+                <div class="action-btn" onclick="getTransport('aviasales')">✈️ Авиабилеты</div>
+                <div class="action-btn" onclick="getTransport('train')">🚂 Поезда</div>
+                <div class="action-btn" onclick="getTransport('bus')">🚌 Автобусы</div>
+                <div class="action-btn" onclick="getTransport('rental')">🚗 Аренда авто</div>
+                <div class="action-btn" onclick="getTransport('taxi')">🚕 Такси</div>
+                <div class="action-btn" onclick="getTransport('metro')">🚇 Метро</div>
+            </div>
+        </div>
+
+        <!-- Секция: Отели -->
+        <div id="hotels-section" class="section hidden">
+            <div class="section-title">🏨 Отели и жилье</div>
+            <div class="buttons-grid">
+                <div class="action-btn" onclick="getHotels('Турция')">🇹🇷 Турция</div>
+                <div class="action-btn" onclick="getHotels('Таиланд')">🇹🇭 Таиланд</div>
+                <div class="action-btn" onclick="getHotels('Италия')">🇮🇹 Италия</div>
+                <div class="action-btn" onclick="getHotels('Испания')">🇪🇸 Испания</div>
+                <div class="action-btn" onclick="getHotels('ОАЭ')">🇦🇪 ОАЭ</div>
+                <div class="action-btn" onclick="getHotels('Египет')">🇪🇬 Египет</div>
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="action-btn small" onclick="getHotels('hotels')">🏨 Поиск отелей</div>
+                <div class="action-btn small" onclick="getHotels('apartments')">🏠 Квартиры</div>
+                <div class="action-btn small" onclick="getHotels('hostels')">🛏️ Хостелы</div>
+            </div>
+        </div>
+
+        <!-- Секция: Еда -->
+        <div id="food-section" class="section hidden">
+            <div class="section-title">🍜 Местная кухня</div>
+            <div class="buttons-grid">
+                <div class="action-btn" onclick="getFood('Турция')">🇹🇷 Турецкая</div>
+                <div class="action-btn" onclick="getFood('Таиланд')">🇹🇭 Тайская</div>
+                <div class="action-btn" onclick="getFood('Италия')">🇮🇹 Итальянская</div>
+                <div class="action-btn" onclick="getFood('Испания')">🇪🇸 Испанская</div>
+                <div class="action-btn" onclick="getFood('Греция')">🇬🇷 Греческая</div>
+                <div class="action-btn" onclick="getFood('Япония')">🇯🇵 Японская</div>
+                <div class="action-btn" onclick="getFood('Китай')">🇨🇳 Китайская</div>
+                <div class="action-btn" onclick="getFood('Индия')">🇮🇳 Индийская</div>
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="action-btn small" onclick="getFood('restaurants')">🍽️ Рестораны</div>
+                <div class="action-btn small" onclick="getFood('street')">🥡 Уличная еда</div>
+                <div class="action-btn small" onclick="getFood('halal')">🥩 Халяль</div>
+                <div class="action-btn small" onclick="getFood('veg')">🥗 Вегетарианское</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомление -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            toast.textContent = text;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function showSection(section) {
+            // Скрываем все секции
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
             
-    except Exception as e:
-        await message.answer("✅ Запрос получен! Информация обрабатывается...")
-        logging.error(f"Error: {e}")
+            // Показываем выбранную секцию
+            document.getElementById(section + '-section').classList.remove('hidden');
+            
+            // Обновляем активную категорию
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
 
-async def main():
-    logging.info("Starting TravelMate bot with ALL buttons working...")
-    await dp.start_polling(bot)
+        // Все функции для отправки данных в бота
+        function selectCountry(country) {
+            tg.sendData(JSON.stringify({ action: 'country', value: country }));
+            showToast(`🌍 Информация о ${country} запрошена`);
+        }
 
-if __name__ == '__main__':
-    asyncio.run(main())
+        function getVisaInfo(info) {
+            tg.sendData(JSON.stringify({ action: 'visa', value: info }));
+            showToast(`📄 Информация о визе (${info}) запрошена`);
+        }
+
+        function getInsurance(type) {
+            tg.sendData(JSON.stringify({ action: 'insurance', value: type }));
+            showToast(`🩺 Страховка для ${type} запрошена`);
+        }
+
+        function getTip(tip) {
+            tg.sendData(JSON.stringify({ action: 'tip', value: tip }));
+            showToast(`💡 Совет "${tip}" запрошен`);
+        }
+
+        function getWeather(country) {
+            tg.sendData(JSON.stringify({ action: 'weather', value: country }));
+            showToast(`🌤️ Погода в ${country} запрошена`);
+        }
+
+        function getCurrency(currency) {
+            tg.sendData(JSON.stringify({ action: 'currency', value: currency }));
+            showToast(`💵 Курс ${currency} запрошен`);
+        }
+
+        function getTransport(type) {
+            tg.sendData(JSON.stringify({ action: 'transport', value: type }));
+            showToast(`🚗 Информация о транспорте (${type}) запрошена`);
+        }
+
+        function getHotels(info) {
+            tg.sendData(JSON.stringify({ action: 'hotels', value: info }));
+            showToast(`🏨 Информация об отелях (${info}) запрошена`);
+        }
+
+        function getFood(cuisine) {
+            tg.sendData(JSON.stringify({ action: 'food', value: cuisine }));
+            showToast(`🍜 Информация о кухне (${cuisine}) запрошена`);
+        }
+
+        // По умолчанию показываем страны
+        showSection('countries');
+    </script>
+</body>
+</html>
