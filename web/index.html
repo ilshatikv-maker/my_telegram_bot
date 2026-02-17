@@ -830,3 +830,81 @@
             tg.sendData(JSON.stringify({
                 action: 'tip',
                 value: tip
+            }));
+            showToast(`💡 Совет "${tip}" запрошен!`);
+            setTimeout(backToMain, 1500);
+        }
+
+        // Получить валюту
+        function getCurrency(currency) {
+            tg.sendData(JSON.stringify({
+                action: 'currency',
+                value: currency
+            }));
+            showToast(`💵 Курс ${currency} запрошен!`);
+            setTimeout(backToMain, 1500);
+        }
+
+        // Обновить курсы
+        function refreshRates() {
+            showToast('🔄 Курсы обновляются...');
+            // Здесь можно добавить реальное обновление
+        }
+
+        // Поиск
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            if (query.length < 2) return;
+            
+            const results = allCountries.filter(c => 
+                c.name.toLowerCase().includes(query)
+            );
+            
+            if (results.length > 0) {
+                displayFilteredCountries(results);
+                showToast(`Найдено ${results.length} стран`);
+            }
+        });
+
+        // Показать главный контент
+        function showMainContent() {
+            // Восстанавливаем популярные страны
+            const popularGrid = document.querySelector('.countries-grid');
+            popularGrid.innerHTML = `
+                <div class="country-card" onclick="selectCountry('Турция')">
+                    <div class="country-flag">🇹🇷</div>
+                    <div class="country-name">Турция</div>
+                    <div class="country-info">
+                        <span>🌡️ 28°C</span>
+                        <span>💶 1.2K</span>
+                    </div>
+                </div>
+                <div class="country-card" onclick="selectCountry('Таиланд')">
+                    <div class="country-flag">🇹🇭</div>
+                    <div class="country-name">Таиланд</div>
+                    <div class="country-info">
+                        <span>🌡️ 32°C</span>
+                        <span>💶 1.5K</span>
+                    </div>
+                </div>
+                <div class="country-card" onclick="selectCountry('Италия')">
+                    <div class="country-flag">🇮🇹</div>
+                    <div class="country-name">Италия</div>
+                    <div class="country-info">
+                        <span>🌡️ 24°C</span>
+                        <span>💶 2.0K</span>
+                    </div>
+                </div>
+                <div class="country-card" onclick="selectCountry('ОАЭ')">
+                    <div class="country-flag">🇦🇪</div>
+                    <div class="country-name">ОАЭ</div>
+                    <div class="country-info">
+                        <span>🌡️ 35°C</span>
+                        <span>💶 2.5K</span>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
