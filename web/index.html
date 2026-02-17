@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TravelMate Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        button {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>TravelMate</h1>
+    <p>Добро пожаловать в мини-приложение!</p>
+    
+    <button onclick="sendData()">Выбрать страну</button>
+    <button onclick="closeApp()">Закрыть</button>
+    
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        function sendData() {
+            tg.sendData("open_country_selection");
+            tg.close();
+        }
+        
+        function closeApp() {
+            tg.close();
+        }
+    </script>
+</body>
+</html>
