@@ -413,7 +413,6 @@
                 </div>
             </div>
         </div>
-
         <!-- СТРАНИЦЫ -->
         <div id="pages">
             <!-- СТРАНЫ -->
@@ -441,25 +440,10 @@
                 <div class="items-grid" id="weatherGrid"></div>
             </div>
 
-            <!-- ВАЛЮТА С КОНВЕРТЕРОМ -->
-            <div id="currencyPage" class="hidden">
-                <div class="currency-converter">
-                    <div class="converter-title">💱 Конвертер валют</div>
-                    <div class="converter-input">
-                        <input type="number" id="amountInput" value="1" min="0" step="0.01">
-                        <select id="fromCurrency" class="converter-select" style="width: auto;"></select>
-                    </div>
-                    <div style="text-align: center; font-size: 24px; margin: 10px 0;">↓</div>
-                    <div class="converter-input">
-                        <input type="number" id="resultInput" value="91.45" min="0" step="0.01" readonly>
-                        <select id="toCurrency" class="converter-select" style="width: auto;"></select>
-                    </div>
-                    <button class="close-btn" onclick="convertCurrency()" style="margin-top: 10px; padding: 12px;">🔄 Конвертировать</button>
-                </div>
-                <div class="items-list" id="currencyList"></div>
-            </div>
-            <button class="close-btn" onclick="updateCurrencyRates()" style="margin-bottom: 15px; padding: 12px;">🔄 Обновить курсы</button>
-
+         <!-- ВАЛЮТА -->
+<div id="currencyPage" class="hidden">
+    <div class="items-list" id="currencyList"></div>
+</div>
             <!-- ТРАНСПОРТ -->
             <div id="transportPage" class="hidden">
                 <div class="items-list" id="transportList"></div>
