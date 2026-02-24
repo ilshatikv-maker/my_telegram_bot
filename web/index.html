@@ -632,117 +632,23 @@ setInterval(updateCurrencyRates, 3600000);
 
 // Обновить курсы при загрузке
 updateCurrencyRates();
-
-
-
- // ============== РЕАЛЬНАЯ ПОГОДА ==============
-// Функция для получения реальной температуры
-async function getRealTemperature(city) {
-    try {
-        const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=bd5e378503939ddaee76f12ad7a97608`);
-        const data = await response.json();
-        
-        if (data.main && data.main.temp) {
-            return `${Math.round(data.main.temp)}°C`;
-        } else {
-            return '?°C';
-        }
-    } catch (error) {
-        console.error('Ошибка получения погоды для', city, error);
-        return '?°C';
-    }
-}
-
-// Функция для отображения погоды
-async function renderWeather() {
-    const grid = document.getElementById('weatherGrid');
-    if (!grid) return;
-    
-    // Показываем загрузку
-    grid.innerHTML = '<div class="loading">⏰ Загрузка погоды...</div>';
-    
-    let html = '';
-    for (const c of countries) {
-        const temp = await getRealTemperature(c.capital);
-        html += `
-            <div class="item-card" onclick="showWeatherDetail('${c.id}')">
-                <div class="item-flag">${c.flag}</div>
-                <div class="item-name">${c.name}</div>
-                <div class="item-temp">${temp}</div>
-            </div>
-        `;
-    }
-    
-    grid.innerHTML = html;
-}
-
-// Обновляем функцию showWeather
-function showWeather() {
-    showPage('weatherPage');
-    document.getElementById('headerTitle').textContent = '🌤️ Погода';
-    document.getElementById('headerSubtitle').textContent = 'Реальная температура';
-    renderWeather(); // Вызываем загрузку погоды
-}
-
-// Функция для детального просмотра погоды
-async function showWeatherDetail(id) {
-    const c = countries.find(c => c.id === id);
-    if (!c) return;
-    
-    const temp = await getRealTemperature(c.capital);
-    
-    const content = `
-        <div class="info-grid">
-            <div class="info-card">
-                <div class="info-label">Столица</div>
-                <div class="info-value">${c.capital}</div>
-            </div>
-            <div class="info-card">
-                <div class="info-label">Температура</div>
-                <div class="info-value">${temp}</div>
-            </div>
-        </div>
-    `;
-    
-    showDetail('🌤️', c.name, content);
-}
-    // Показываем загрузку
-    showDetail('🌤️', c.name, '<div class="loading">⏰ Загрузка...</div>');
-// После showDetail добавляем загрузку погоды для страны
-getRealTemperature(c.capital).then(temp => {
-    const el = document.getElementById(`country-weather-${c.id}`);
-    if (el) el.textContent = temp;
-});
-    // Получаем реальные данные
-    const temp = await getRealTemperature(c.capital);
-
-    const content = `
-        <div class="info-grid">
-            <div class="info-card">
-                <div class="info-label">Столица</div>
-                <div class="info-value">${c.capital}</div>
-            </div>
-            <div class="info-card">
-                <div class="info-label">Температура</div>
-                <div class="info-value">${temp}</div>
-            </div>
-        </div>
-        <div class="detail-section">
-            <div class="detail-section-title">🌡️ Сейчас в ${c.capital}</div>
-            <div style="text-align: center; font-size: 48px; margin: 20px 0;">
-                ${temp}
-            </div>
-        </div>
-    `;
-
-    // Обновляем детальную страницу
-    document.getElementById('detailIcon').textContent = '🌤️';
-    document.getElementById('detailTitle').textContent = c.name;
-    document.getElementById('detailContent').innerHTML = content;
-}
-
-// Удаляем старый weatherData (можно закомментировать или удалить)
-// const weatherData = { ... };
+        // ============== ПОГОДА ==============
+        const weatherData = {
+            'Анкара': '12°C',
+            'Бангкок': '32°C',
+            'Рим': '18°C',
+            'Мадрид': '16°C',
+            'Афины': '19°C',
+            'Абу-Даби': '28°C',
+            'Париж': '14°C',
+            'Берлин': '12°C',
+            'Лондон': '11°C',
+            'Токио': '15°C',
+            'Пекин': '13°C',
+            'Нью-Дели': '27°C',
+            'Каир': '24°C',
+            'Вашингтон': '10°C'
+        };
 
         // ============== НАВИГАЦИЯ ==============
         function showMainMenu() {
@@ -1036,7 +942,7 @@ getRealTemperature(c.capital).then(temp => {
                     <div class="info-card"><div class="info-label">Виза</div><div class="info-value">${c.visa}</div></div>
                     <div class="info-card"><div class="info-label">Валюта</div><div class="info-value">${c.currency}</div></div>
                     <div class="info-card"><div class="info-label">Столица</div><div class="info-value">${c.capital}</div></div>
-<div class="info-card"><div class="info-label">Погода</div><div class="info-value" id="country-weather-${c.id}">Загрузка...</div></div>
+                    <div class="info-card"><div class="info-label">Погода</div><div class="info-value">${weatherData[c.capital] || '?°C'}</div></div>
                 </div>
                 <div class="detail-section">
                     <div class="detail-section-title">🏖️ Популярные курорты</div>
