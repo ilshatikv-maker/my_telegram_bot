@@ -368,12 +368,15 @@
             </div>
         </div>
 
-        <!-- ГЛАВНОЕ МЕНЮ(убрал) -->
+        <!-- ГЛАВНОЕ МЕНЮ -->
+        <div id="mainMenu">
+            <div class="categories" id="categoryMenu">
+                <div class="category-btn active" onclick="filterCategory('all')">🔥 Все</div>
+                <div class="category-btn" onclick="filterCategory('asia')">🌏 Азия</div>
+                <div class="category-btn" onclick="filterCategory('europe')">🇪🇺 Европа</div>
+                <div class="category-btn" onclick="filterCategory('popular')">⭐ Популярные</div>
+            </div>
 
-
-
-
-        
             <div class="menu-grid">
                 <div class="menu-item" onclick="showCountries()">
                     <div class="menu-icon">🌍</div>
