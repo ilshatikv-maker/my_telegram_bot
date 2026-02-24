@@ -1,242 +1,1169 @@
-import logging
-import json
-import os
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from aiogram.filters import Command
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from dotenv import load_dotenv
-import asyncio
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
 
-load_dotenv()
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
 
-API_TOKEN = os.getenv('BOT_TOKEN')
-logging.basicConfig(level=logging.INFO)
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher()
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
 
-@dp.message(Command('start'))
-async def start_command(message: types.Message):
-    builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(
-        text="🌍 Открыть TravelMate",
-        web_app=WebAppInfo(url="https://ilshatikv-maker.github.io/my_telegram_bot/web/?v=final")
-    ))
+        .back-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
 
-    await message.answer(
-        "👋 Добро пожаловать в TravelMate!\n\n"
-        "🎯 Теперь работают ВСЕ кнопки:\n"
-        "• Страны (15+ стран)\n"
-        "• Визы (Шенген, США, и т.д.)\n"
-        "• Страховки (все виды)\n"
-        "• Советы (20+ советов)\n"
-        "• Погода в странах\n"
-        "• Курсы валют (8 валют)\n"
-        "• Транспорт\n"
-        "• Отели\n"
-        "• Еда и кухня\n\n"
-        "👇 Нажми кнопку и проверь!",
-        reply_markup=builder.as_markup()
-    )
+        .header-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #667eea;
+        }
 
+        .header-subtitle {
+            font-size: 13px;
+            color: #a0aec0;
+        }
 
-@dp.message(lambda message: message.web_app_data)
-async def handle_web_app_data(message: types.Message):
-    try:
-        data = json.loads(message.web_app_data.data)
-        action = data.get('action')
-        value = data.get('value')
+        .categories {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 5px 0 15px;
+            margin-bottom: 20px;
+            scrollbar-width: none;
+        }
 
-        # ============== СТРАНЫ ==============
-        if action == 'country':
-            countries = {
-                'Турция': '🇹🇷 *Турция*\n\n✅ Виза: без визы 60 дней\n💵 Валюта: лира (TRY)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Анталья, Кемер, Алания\n🍜 Кухня: кебаб, пахлава, рахат-лукум',
-                'Таиланд': '🇹🇭 *Таиланд*\n\n✅ Виза: 30 дней без визы\n💵 Валюта: бат (THB)\n🌡️ Погода: +28..+35°C\n🏖️ Курорты: Пхукет, Паттайя, Самуи\n🍜 Кухня: том ям, пад тай',
-                'Италия': '🇮🇹 *Италия*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +20..+30°C\n🏛️ Города: Рим, Венеция, Флоренция\n🍜 Кухня: пицца, паста, джелато',
-                'Испания': '🇪🇸 *Испания*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +22..+32°C\n🏖️ Курорты: Барселона, Коста-Брава\n🍜 Кухня: паэлья, хамон, тапас',
-                'Греция': '🇬🇷 *Греция*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +25..+35°C\n🏖️ Острова: Крит, Родос, Корфу\n🍜 Кухня: мусака, сувлаки, сыр фета',
-                'ОАЭ': '🇦🇪 *ОАЭ*\n\n✅ Виза: по прилету\n💵 Валюта: дирхам (AED)\n🌡️ Погода: +30..+40°C\n🏙️ Города: Дубай, Абу-Даби\n🛍️ Шоппинг: золото, техника',
-                'Франция': '🇫🇷 *Франция*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +18..+25°C\n🏛️ Города: Париж, Лион, Марсель\n🍜 Кухня: круассаны, сыры, вино',
-                'Германия': '🇩🇪 *Германия*\n\n✅ Виза: Шенген\n💵 Валюта: евро (EUR)\n🌡️ Погода: +15..+25°C\n🏰 Города: Берлин, Мюнхен, Гамбург\n🍜 Кухня: колбаски, шницель, пиво',
-                'Великобритания': '🇬🇧 *Великобритания*\n\n✅ Виза: UK Visa\n💵 Валюта: фунт (GBP)\n🌡️ Погода: +10..+20°C\n🏙️ Города: Лондон, Манчестер\n🍜 Кухня: fish and chips',
-                'Япония': '🇯🇵 *Япония*\n\n✅ Виза: нужна виза\n💵 Валюта: иена (JPY)\n🌡️ Погода: +15..+30°C\n🏯 Города: Токио, Киото, Осака\n🍜 Кухня: суши, рамен, темпура',
-                'Китай': '🇨🇳 *Китай*\n\n✅ Виза: нужна виза\n💵 Валюта: юань (CNY)\n🌡️ Погода: +10..+30°C\n🏯 Города: Пекин, Шанхай\n🍜 Кухня: утка по-пекински',
-                'Индия': '🇮🇳 *Индия*\n\n✅ Виза: e-Visa\n💵 Валюта: рупия (INR)\n🌡️ Погода: +25..+35°C\n🕌 Города: Дели, Мумбаи, Гоа\n🍜 Кухня: карри, наан',
-                'Египет': '🇪🇬 *Египет*\n\n✅ Виза: по прилету\n💵 Валюта: фунт (EGP)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Шарм-эль-Шейх, Хургада',
-                'Тунис': '🇹🇳 *Тунис*\n\n✅ Виза: без визы\n💵 Валюта: динар (TND)\n🌡️ Погода: +25..+35°C\n🏖️ Курорты: Сусс, Хаммамет, Джерба',
-                'Мальдивы': '🇲🇻 *Мальдивы*\n\n✅ Виза: по прилету\n💵 Валюта: руфия (MVR)\n🌡️ Погода: +28..+32°C\n🏝️ Райские острова, овервотер бунгало',
+        .categories::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            border-radius: 40px;
+            white-space: nowrap;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .category-btn.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .menu-item {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 25px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .menu-item:active {
+            transform: scale(0.95);
+            background: white;
+        }
+
+        .menu-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .menu-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #667eea;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 20px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .item-card:active {
+            transform: scale(0.95);
+            background: white;
+        }
+
+        .item-flag {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .item-name {
+            font-weight: 700;
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .item-temp {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ff8e8e;
+        }
+
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .list-item {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .list-item:active {
+            transform: translateX(5px);
+            background: white;
+        }
+
+        .list-icon {
+            font-size: 32px;
+        }
+
+        .list-content {
+            flex: 1;
+        }
+
+        .list-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+
+        .list-subtitle {
+            font-size: 13px;
+            color: #a0aec0;
+        }
+
+        .detail-page {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .detail-icon {
+            font-size: 80px;
+        }
+
+        .detail-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .detail-section {
+            margin-bottom: 30px;
+        }
+
+        .detail-section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #ff8e8e;
+            border-bottom: 3px solid #ff8e8e;
+            padding-bottom: 8px;
+        }
+
+        .detail-text {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #2d3748;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .info-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .close-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .currency-converter {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .converter-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .converter-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .converter-input input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            font-size: 16px;
+        }
+
+        .converter-select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            padding: 12px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #2d3748;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        li:before {
+            content: "✨";
+            color: #ff8e8e;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" id="header">
+            <div class="back-btn" id="backBtn" onclick="goBack()">←</div>
+            <div>
+                <div class="header-title" id="headerTitle">TravelMate</div>
+                <div class="header-subtitle" id="headerSubtitle"></div>
+            </div>
+        </div>
+
+          <!-- ГЛАВНОЕ МЕНЮ (БЕЗ КАТЕГОРИЙ) -->
+        <div id="mainMenu">
+            <div class="menu-grid">
+                <div class="menu-item" onclick="showCountries()">
+                    <div class="menu-icon">🌍</div>
+                    <div class="menu-title">Страны</div>
+                </div>
+                <div class="menu-item" onclick="showVisa()">
+                    <div class="menu-icon">📄</div>
+                    <div class="menu-title">Визы</div>
+                </div>
+                <div class="menu-item" onclick="showInsurance()">
+                    <div class="menu-icon">🩺</div>
+                    <div class="menu-title">Страховки</div>
+                </div>
+                <div class="menu-item" onclick="showTips()">
+                    <div class="menu-icon">💡</div>
+                    <div class="menu-title">Советы</div>
+                </div>
+                <div class="menu-item" onclick="showWeather()">
+                    <div class="menu-icon">🌤️</div>
+                    <div class="menu-title">Погода</div>
+                </div>
+                <div class="menu-item" onclick="showCurrency()">
+                    <div class="menu-icon">💵</div>
+                    <div class="menu-title">Валюта</div>
+                </div>
+                <div class="menu-item" onclick="showTransport()">
+                    <div class="menu-icon">🚗</div>
+                    <div class="menu-title">Транспорт</div>
+                </div>
+                <div class="menu-item" onclick="showHotels()">
+                    <div class="menu-icon">🏨</div>
+                    <div class="menu-title">Отели</div>
+                </div>
+                <div class="menu-item" onclick="showFood()">
+                    <div class="menu-icon">🍜</div>
+                    <div class="menu-title">Еда</div>
+                </div>
+                <div class="menu-item" onclick="showShopping()">
+                    <div class="menu-icon">🛍️</div>
+                    <div class="menu-title">Шоппинг</div>
+                </div>
+            </div>
+        </div>
+        <!-- СТРАНИЦЫ -->
+        <div id="pages">
+            <!-- СТРАНЫ -->
+            <div id="countriesPage" class="hidden">
+                <div class="items-grid" id="countriesGrid"></div>
+            </div>
+
+            <!-- ВИЗЫ -->
+            <div id="visaPage" class="hidden">
+                <div class="items-list" id="visaList"></div>
+            </div>
+
+            <!-- СТРАХОВКИ -->
+            <div id="insurancePage" class="hidden">
+                <div class="items-list" id="insuranceList"></div>
+            </div>
+
+            <!-- СОВЕТЫ -->
+            <div id="tipsPage" class="hidden">
+                <div class="items-list" id="tipsList"></div>
+            </div>
+
+            <!-- ПОГОДА -->
+            <div id="weatherPage" class="hidden">
+                <div class="items-grid" id="weatherGrid"></div>
+            </div>
+
+         <!-- ВАЛЮТА -->
+<div id="currencyPage" class="hidden">
+    <div class="items-list" id="currencyList"></div>
+</div>
+            <!-- ТРАНСПОРТ -->
+            <div id="transportPage" class="hidden">
+                <div class="items-list" id="transportList"></div>
+            </div>
+
+            <!-- ОТЕЛИ -->
+            <div id="hotelsPage" class="hidden">
+                <div class="items-grid" id="hotelsGrid"></div>
+            </div>
+
+            <!-- ЕДА -->
+            <div id="foodPage" class="hidden">
+                <div class="items-grid" id="foodGrid"></div>
+            </div>
+
+            <!-- ШОППИНГ -->
+            <div id="shoppingPage" class="hidden">
+                <div class="items-grid" id="shoppingGrid"></div>
+            </div>
+
+            <!-- ДЕТАЛЬНАЯ СТРАНИЦА -->
+            <div id="detailPage" class="hidden">
+                <div class="detail-page">
+                    <div class="detail-header">
+                        <div class="detail-icon" id="detailIcon">🌍</div>
+                        <div class="detail-title" id="detailTitle"></div>
+                    </div>
+                    <div id="detailContent"></div>
+                    <button class="close-btn" onclick="closeDetail()">✕ Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // ============== ДАННЫЕ ==============
+        const countries = [
+            { id: 'turkey', name: 'Турция', flag: '🇹🇷', capital: 'Анкара', category: 'asia', popular: true, currency: 'TRY', visa: '60 дней' },
+            { id: 'thailand', name: 'Таиланд', flag: '🇹🇭', capital: 'Бангкок', category: 'asia', popular: true, currency: 'THB', visa: '30 дней' },
+            { id: 'italy', name: 'Италия', flag: '🇮🇹', capital: 'Рим', category: 'europe', popular: true, currency: 'EUR', visa: 'Шенген' },
+            { id: 'spain', name: 'Испания', flag: '🇪🇸', capital: 'Мадрид', category: 'europe', popular: true, currency: 'EUR', visa: 'Шенген' },
+            { id: 'greece', name: 'Греция', flag: '🇬🇷', capital: 'Афины', category: 'europe', popular: true, currency: 'EUR', visa: 'Шенген' },
+            { id: 'uae', name: 'ОАЭ', flag: '🇦🇪', capital: 'Абу-Даби', category: 'asia', popular: true, currency: 'AED', visa: 'По прилету' },
+            { id: 'france', name: 'Франция', flag: '🇫🇷', capital: 'Париж', category: 'europe', popular: false, currency: 'EUR', visa: 'Шенген' },
+            { id: 'germany', name: 'Германия', flag: '🇩🇪', capital: 'Берлин', category: 'europe', popular: false, currency: 'EUR', visa: 'Шенген' },
+            { id: 'uk', name: 'Великобритания', flag: '🇬🇧', capital: 'Лондон', category: 'europe', popular: false, currency: 'GBP', visa: 'UK Visa' },
+            { id: 'japan', name: 'Япония', flag: '🇯🇵', capital: 'Токио', category: 'asia', popular: false, currency: 'JPY', visa: 'Нужна виза' },
+            { id: 'china', name: 'Китай', flag: '🇨🇳', capital: 'Пекин', category: 'asia', popular: false, currency: 'CNY', visa: 'Нужна виза' },
+            { id: 'india', name: 'Индия', flag: '🇮🇳', capital: 'Нью-Дели', category: 'asia', popular: false, currency: 'INR', visa: 'e-Visa' },
+            { id: 'egypt', name: 'Египет', flag: '🇪🇬', capital: 'Каир', category: 'africa', popular: false, currency: 'EGP', visa: 'По прилету' },
+            { id: 'usa', name: 'США', flag: '🇺🇸', capital: 'Вашингтон', category: 'america', popular: false, currency: 'USD', visa: 'Нужна виза' }
+        ];
+
+        const visas = [
+            { id: 'schengen', name: 'Шенгенская виза', countries: '26 стран', price: '80€', time: '5-10 дней' },
+            { id: 'usa', name: 'Виза в США', countries: 'США', price: '135€', time: '2-4 недели' },
+            { id: 'uk', name: 'Виза в Великобританию', countries: 'UK', price: '110€', time: '3 недели' },
+            { id: 'china', name: 'Виза в Китай', countries: 'Китай', price: '130€', time: '4-5 дней' },
+            { id: 'japan', name: 'Виза в Японию', countries: 'Япония', price: '40€', time: '5-7 дней' },
+            { id: 'india', name: 'e-Visa Индия', countries: 'Индия', price: '70€', time: '3-5 дней' },
+            { id: 'turkey', name: 'Виза в Турцию', countries: 'Турция', price: 'Бесплатно', time: '60 дней' },
+            { id: 'uae', name: 'Виза в ОАЭ', countries: 'ОАЭ', price: 'Бесплатно', time: 'По прилету' },
+            { id: 'thailand', name: 'Виза в Таиланд', countries: 'Таиланд', price: 'Бесплатно', time: '30 дней' },
+            { id: 'egypt', name: 'Виза в Египет', countries: 'Египет', price: '25$', time: 'По прилету' }
+        ];
+
+        const insurances = [
+            { id: 'turkey', name: 'Страховка в Турцию', price: '5€/день', coverage: '30 000€' },
+            { id: 'thailand', name: 'Страховка в Таиланд', price: '6€/день', coverage: '30 000€' },
+            { id: 'europe', name: 'Страховка в Европу', price: '5€/день', coverage: '30 000€' },
+            { id: 'usa', name: 'Страховка в США', price: '15€/день', coverage: '50 000€' },
+            { id: 'asia', name: 'Страховка в Азию', price: '5€/день', coverage: '30 000€' },
+            { id: 'basic', name: 'Базовая страховка', price: '5€/день', coverage: '30 000€' },
+            { id: 'extended', name: 'Расширенная страховка', price: '7€/день', coverage: '50 000€' },
+            { id: 'sport', name: 'Спортивная страховка', price: '12€/день', coverage: '50 000€' }
+        ];
+
+        const tips = [
+            { id: 'visa', name: 'Советы по визе', desc: 'Как получить визу' },
+            { id: 'insurance', name: 'Советы по страховке', desc: 'Как выбрать' },
+            { id: 'money', name: 'Как экономить', desc: 'Лайфхаки' },
+            { id: 'packing', name: 'Что взять с собой', desc: 'Список вещей' },
+            { id: 'safety', name: 'Правила безопасности', desc: 'В путешествии' },
+            { id: 'language', name: 'Разговорник', desc: 'Полезные фразы' },
+            { id: 'transport', name: 'Транспорт', desc: 'Аренда авто' },
+            { id: 'hotels', name: 'Выбор отеля', desc: 'На что смотреть' },
+            { id: 'food', name: 'Советы по еде', desc: 'Что пробовать' }
+        ];
+
+        const transports = [
+            { id: 'avia', name: 'Авиабилеты', desc: 'Цены и советы' },
+            { id: 'train', name: 'Поезда', desc: 'Ж/д билеты' },
+            { id: 'bus', name: 'Автобусы', desc: 'Междугородние' },
+            { id: 'rental', name: 'Аренда авто', desc: 'Документы, цены' },
+            { id: 'taxi', name: 'Такси', desc: 'Uber, Bolt' },
+            { id: 'metro', name: 'Метро', desc: 'В мире' }
+        ];
+
+        const hotels = [
+            { id: 'turkey', name: 'Турция', price: 'от 3000₽', flag: '🇹🇷' },
+            { id: 'thailand', name: 'Таиланд', price: 'от 1500₽', flag: '🇹🇭' },
+            { id: 'italy', name: 'Италия', price: 'от 5000₽', flag: '🇮🇹' },
+            { id: 'spain', name: 'Испания', price: 'от 4000₽', flag: '🇪🇸' },
+            { id: 'greece', name: 'Греция', price: 'от 4500₽', flag: '🇬🇷' },
+            { id: 'uae', name: 'ОАЭ', price: 'от 8000₽', flag: '🇦🇪' },
+            { id: 'france', name: 'Франция', price: 'от 6000₽', flag: '🇫🇷' },
+            { id: 'japan', name: 'Япония', price: 'от 7000₽', flag: '🇯🇵' }
+        ];
+
+        const foods = [
+            { id: 'turkey', name: 'Турция', desc: 'Кебаб, пахлава', flag: '🇹🇷' },
+            { id: 'thailand', name: 'Таиланд', desc: 'Том ям, пад тай', flag: '🇹🇭' },
+            { id: 'italy', name: 'Италия', desc: 'Пицца, паста', flag: '🇮🇹' },
+            { id: 'spain', name: 'Испания', desc: 'Паэлья, хамон', flag: '🇪🇸' },
+            { id: 'greece', name: 'Греция', desc: 'Мусака, сувлаки', flag: '🇬🇷' },
+            { id: 'japan', name: 'Япония', desc: 'Суши, рамен', flag: '🇯🇵' },
+            { id: 'china', name: 'Китай', desc: 'Утка по-пекински', flag: '🇨🇳' },
+            { id: 'india', name: 'Индия', desc: 'Карри, наан', flag: '🇮🇳' }
+        ];
+
+        const shopping = [
+            { id: 'turkey', name: 'Турция', desc: 'Золото, ковры', flag: '🇹🇷' },
+            { id: 'italy', name: 'Италия', desc: 'Бренды, обувь', flag: '🇮🇹' },
+            { id: 'france', name: 'Франция', desc: 'Парфюм, вино', flag: '🇫🇷' },
+            { id: 'uae', name: 'ОАЭ', desc: 'Золото, техника', flag: '🇦🇪' },
+            { id: 'japan', name: 'Япония', desc: 'Техника, косметика', flag: '🇯🇵' },
+            { id: 'thailand', name: 'Таиланд', desc: 'Шелк, сувениры', flag: '🇹🇭' },
+            { id: 'dutyfree', name: 'Duty Free', desc: 'В аэропорту', flag: '🛍️' },
+            { id: 'taxfree', name: 'Tax Free', desc: 'Вернуть налог', flag: '💰' }
+        ];
+
+       // ============== ВАЛЮТА С АВТООБНОВЛЕНИЕМ ==============
+let currencyRates = [
+    { code: 'USD', name: 'Доллар США', rate: 91.45, flag: '🇺🇸' },
+    { code: 'EUR', name: 'Евро', rate: 98.76, flag: '🇪🇺' },
+    { code: 'TRY', name: 'Турецкая лира', rate: 2.84, flag: '🇹🇷' },
+    { code: 'THB', name: 'Тайский бат', rate: 2.52, flag: '🇹🇭' },
+    { code: 'AED', name: 'Дирхам ОАЭ', rate: 24.90, flag: '🇦🇪' },
+    { code: 'GBP', name: 'Фунт', rate: 115.30, flag: '🇬🇧' },
+    { code: 'CNY', name: 'Юань', rate: 12.65, flag: '🇨🇳' },
+    { code: 'JPY', name: 'Иена', rate: 0.61, flag: '🇯🇵' },
+    { code: 'INR', name: 'Рупия', rate: 1.09, flag: '🇮🇳' },
+    { code: 'EGP', name: 'Египетский фунт', rate: 1.89, flag: '🇪🇬' }
+];
+
+// Функция для обновления курсов валют
+async function updateCurrencyRates() {
+    try {
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        const data = await response.json();
+
+        // Получаем курс USD к RUB
+        const usdToRub = data.rates.RUB;
+
+        // Обновляем курсы
+        currencyRates = currencyRates.map(c => {
+            if (c.code === 'USD') {
+                return { ...c, rate: usdToRub.toFixed(2) };
+            } else {
+                const rateToUSD = data.rates[c.code];
+                if (rateToUSD) {
+                    return { ...c, rate: (usdToRub / rateToUSD).toFixed(2) };
+                }
+                return c;
             }
-            await message.answer(countries.get(value, f"🇺🇳 *{value}*\n\nИнформация скоро появится"),
-                                 parse_mode='Markdown')
+        });
 
-        # ============== ВИЗЫ ==============
-        elif action == 'visa':
-            visas = {
-                'Шенген': '📄 *Шенгенская виза*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета\n• Фото 3.5x4.5\n• Страховка от 30k€\n• Брони отеля\n• Билеты\n• Справка с работы\n\n⏰ Срок: 5-10 раб дней\n💰 Стоимость: 80€',
-                'США': '📄 *Виза в США (B1/B2)*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета DS-160\n• Фото 5x5\n• Подтверждение оплаты\n• Запись на собеседование\n\n⏰ Срок: от 2 недель\n💰 Стоимость: 160$',
-                'Великобритания': '📄 *Виза в Великобританию*\n\n📋 Документы:\n• Загранпаспорт\n• Анкета онлайн\n• Биометрия\n• Подтверждение доходов\n\n⏰ Срок: 3-4 недели\n💰 Стоимость: от 100£',
-                'Китай': '📄 *Виза в Китай*\n\n📋 Документы:\n• Загранпаспорт\n• Приглашение\n• Брони отеля\n• Билеты\n\n⏰ Срок: 4-5 дней\n💰 Стоимость: от 150$',
-                'Япония': '📄 *Виза в Японию*\n\n📋 Документы:\n• Загранпаспорт\n• Спонсорское письмо\n• Выписка со счета\n• План поездки\n\n⏰ Срок: 5-7 дней\n💰 Стоимость: от 3000₽',
-                'Индия': '📄 *Электронная виза в Индию*\n\n✅ Оформляется онлайн\n📋 Нужен загранпаспорт и фото\n⏰ Срок: 3-5 дней\n💰 Стоимость: от 80$',
-                'Турция': '📄 *Виза в Турцию*\n\n✅ Без визы до 60 дней\n✅ Нужен только загранпаспорт',
-                'ОАЭ': '📄 *Виза в ОАЭ*\n\n✅ По прилету на 30 дней\n💰 Стоимость: бесплатно',
-                'документы': '📋 *Общий список документов*\n\n• Загранпаспорт (срок действия 6 мес)\n• Копия паспорта РФ\n• Фото 3.5x4.5 (матовая)\n• Мед страховка\n• Подтверждение доходов\n• Брони отелей\n• Авиабилеты',
-                'сроки': '⏰ *Сроки оформления*\n\n• Шенген: 5-10 дней\n• США: 2-4 недели\n• Великобритания: 3 недели\n• Азия: 3-7 дней\n• Срочные визы: 1-3 дня',
-                'стоимость': '💰 *Стоимость виз*\n\n• Шенген: 80€\n• США: 160$\n• Великобритания: 100£\n• Китай: 150$\n• Япония: 3000₽\n• Индия: 80$',
+        // Если сейчас открыта страница валюты - обновляем отображение
+        if (!document.getElementById('currencyPage').classList.contains('hidden')) {
+            renderCurrencies();
+            initCurrencyConverter();
+        }
+
+        console.log('Курсы валют обновлены');
+    } catch (error) {
+        console.error('Ошибка обновления курсов:', error);
+    }
+}
+
+// Обновлять курсы каждый час
+setInterval(updateCurrencyRates, 3600000);
+
+// Обновить курсы при загрузке
+updateCurrencyRates();
+        // ============== ПОГОДА ==============
+        const weatherData = {
+            'Анкара': '12°C',
+            'Бангкок': '32°C',
+            'Рим': '18°C',
+            'Мадрид': '16°C',
+            'Афины': '19°C',
+            'Абу-Даби': '28°C',
+            'Париж': '14°C',
+            'Берлин': '12°C',
+            'Лондон': '11°C',
+            'Токио': '15°C',
+            'Пекин': '13°C',
+            'Нью-Дели': '27°C',
+            'Каир': '24°C',
+            'Вашингтон': '10°C'
+        };
+
+        // ============== НАВИГАЦИЯ ==============
+        function showMainMenu() {
+            document.getElementById('mainMenu').classList.remove('hidden');
+            document.getElementById('pages').classList.add('hidden');
+            document.getElementById('headerTitle').textContent = 'TravelMate';
+            document.getElementById('headerSubtitle').textContent = '';
+        }
+
+        function showPage(pageId) {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('pages').classList.remove('hidden');
+            document.querySelectorAll('#pages > div').forEach(p => p.classList.add('hidden'));
+            document.getElementById(pageId).classList.remove('hidden');
+        }
+
+        function showCountries() {
+            showPage('countriesPage');
+            document.getElementById('headerTitle').textContent = '🌍 Страны';
+            document.getElementById('headerSubtitle').textContent = 'Выберите страну';
+            renderCountries();
+        }
+
+        function showVisa() {
+            showPage('visaPage');
+            document.getElementById('headerTitle').textContent = '📄 Визы';
+            document.getElementById('headerSubtitle').textContent = 'Выберите визу';
+            renderVisas();
+        }
+
+        function showInsurance() {
+            showPage('insurancePage');
+            document.getElementById('headerTitle').textContent = '🩺 Страховки';
+            document.getElementById('headerSubtitle').textContent = 'Выберите страховку';
+            renderInsurances();
+        }
+
+        function showTips() {
+            showPage('tipsPage');
+            document.getElementById('headerTitle').textContent = '💡 Советы';
+            document.getElementById('headerSubtitle').textContent = 'Выберите совет';
+            renderTips();
+        }
+
+        function showWeather() {
+            showPage('weatherPage');
+            document.getElementById('headerTitle').textContent = '🌤️ Погода';
+            document.getElementById('headerSubtitle').textContent = 'Температура в столицах';
+            renderWeather();
+        }
+
+     function showCurrency() {
+    showPage('currencyPage');
+    document.getElementById('headerTitle').textContent = '💵 Валюта';
+    document.getElementById('headerSubtitle').textContent = 'Курсы валют';
+    renderCurrencies();
+    initCurrencyConverter();
+    updateCurrencyRates(); // Добавь эту строку
+}
+
+        function showTransport() {
+            showPage('transportPage');
+            document.getElementById('headerTitle').textContent = '🚗 Транспорт';
+            document.getElementById('headerSubtitle').textContent = 'Выберите транспорт';
+            renderTransports();
+        }
+
+        function showHotels() {
+            showPage('hotelsPage');
+            document.getElementById('headerTitle').textContent = '🏨 Отели';
+            document.getElementById('headerSubtitle').textContent = 'Цены на отели';
+            renderHotels();
+        }
+
+        function showFood() {
+            showPage('foodPage');
+            document.getElementById('headerTitle').textContent = '🍜 Еда';
+            document.getElementById('headerSubtitle').textContent = 'Национальная кухня';
+            renderFoods();
+        }
+
+        function showShopping() {
+            showPage('shoppingPage');
+            document.getElementById('headerTitle').textContent = '🛍️ Шоппинг';
+            document.getElementById('headerSubtitle').textContent = 'Что купить';
+            renderShopping();
+        }
+
+        function goBack() {
+            if (!document.getElementById('detailPage').classList.contains('hidden')) {
+                closeDetail();
+            } else if (!document.getElementById('mainMenu').classList.contains('hidden')) {
+                tg.close();
+            } else {
+                showMainMenu();
             }
-            await message.answer(visas.get(value, f"📄 *{value}*\n\nИнформация о визе скоро появится"),
-                                 parse_mode='Markdown')
+        }
 
-        # ============== СТРАХОВКИ ==============
-        elif action == 'insurance':
-            insurances = {
-                'Турция': '🩺 *Страховка в Турцию*\n\n🔵 Базовая: от 500₽/день\n🔵 Расширенная: от 800₽/день\n⚽ Спортивная: от 1200₽/день\n\n✅ Покрытие: от 30k€\n✅ Телемедицина 24/7\n✅ Прямая оплата',
-                'Таиланд': '🩺 *Страховка в Таиланд*\n\n🔵 Базовая: от 600₽/день\n🔵 Расширенная: от 900₽/день\n⚽ Спортивная: от 1500₽/день\n\n⚠️ Обязательна страховка от COVID',
-                'Италия': '🩺 *Страховка в Италию*\n\n🔵 Базовая: от 550₽/день\n🔵 Расширенная: от 850₽/день\n⚽ Спортивная: от 1300₽/день\n\n✅ Для Шенгена обязательно',
-                'Испания': '🩺 *Страховка в Испанию*\n\n🔵 Базовая: от 550₽/день\n🔵 Расширенная: от 850₽/день\n⚽ Спортивная: от 1300₽/день',
-                'США': '🩺 *Страховка в США*\n\n🔵 Базовая: от 1500₽/день\n🔵 Расширенная: от 2500₽/день\n\n⚠️ Медицина в США дорогая',
-                'ОАЭ': '🩺 *Страховка в ОАЭ*\n\n🔵 Базовая: от 500₽/день\n🔵 Расширенная: от 800₽/день',
-                'базовая': '🟢 *Базовая страховка*\n\n✅ Покрытие: 30k€\n✅ Амбулаторное лечение\n✅ Экстренная госпитализация\n✅ Транспортировка\n\n💰 Цена: от 500₽/день',
-                'расширенная': '🔵 *Расширенная страховка*\n\n✅ Покрытие: 50k€\n✅ Всё из базовой\n✅ Стоматология\n✅ Посещение родственников\n✅ Юридическая помощь\n\n💰 Цена: от 800₽/день',
-                'спорт': '⚽ *Спортивная страховка*\n\n✅ Покрытие: 50k€\n✅ Экстремальные виды спорта\n✅ Травмы при занятиях\n✅ Горные лыжи/дайвинг\n\n💰 Цена: от 1200₽/день',
-                'отмена': '✈️ *Страховка от отмены*\n\n✅ Отмена поездки\n✅ Задержка рейса\n✅ Потеря багажа\n\n💰 Цена: от 300₽/день',
-            }
-            await message.answer(insurances.get(value, f"🩺 *{value}*\n\nИнформация о страховке скоро появится"),
-                                 parse_mode='Markdown')
+        function showDetail(icon, title, content) {
+            document.querySelectorAll('#pages > div').forEach(p => p.classList.add('hidden'));
+            document.getElementById('detailPage').classList.remove('hidden');
+            document.getElementById('detailIcon').textContent = icon;
+            document.getElementById('detailTitle').textContent = title;
+            document.getElementById('detailContent').innerHTML = content;
+            document.getElementById('headerTitle').textContent = title;
+            document.getElementById('headerSubtitle').textContent = 'Подробная информация';
+        }
 
-        # ============== СОВЕТЫ ==============
-        elif action == 'tip':
-            tips = {
-                'visa': '💡 *Советы по визе*\n\n📌 Подавайтесь за 2-3 месяца\n📌 Все документы переведите\n📌 Сделайте качественные фото\n📌 Страховка обязательна\n📌 Имейте подтверждение доходов',
-                'insurance': '💡 *Советы по страховке*\n\n📌 Берите покрытие от 30k€\n📌 Для активного отдыха - спорт\n📌 Проверьте франшизу\n📌 Сохраните номер ассистанса',
-                'money': '💡 *Как экономить*\n\n📌 Ловите акции авиакомпаний\n📌 Отели бронируйте заранее\n📌 Меняйте валюту не в аэропорту\n📌 Покупайте местную симку\n📌 Ешьте там, где местные',
-                'packing': '💡 *Что взять с собой*\n\n📌 Паспорт и документы\n📌 Страховка\n📌 Деньги и карты\n📌 Зарядки и адаптеры\n📌 Аптечка\n📌 Удобная обувь',
-                'safety': '💡 *Правила безопасности*\n\n📌 Копии документов отдельно\n📌 Не носите все деньги с собой\n📌 Сейф в отеле\n📌 Скачайте карты офлайн',
-                'language': '💡 *Разговорник*\n\n• Hello - Здравствуйте\n• Thank you - Спасибо\n• How much - Сколько стоит\n• Help - Помогите\n• Where is - Где находится',
-                'transport': '💡 *Советы по транспорту*\n\n📌 Нужны права (международные)\n📌 Залог замораживают на карте\n📌 Фото машины при получении\n📌 Страховка обязательна',
-                'hotels': '💡 *Советы по отелям*\n\n📌 Читайте свежие отзывы\n📌 Смотрите расположение\n📌 Завтраки включены?\n📌 Трансфер от отеля',
-                'food': '💡 *Советы по еде*\n\n📌 Пробуйте уличную еду\n📌 Спросите у местных\n📌 Осторожно с острой едой\n📌 Пейте бутилированную воду',
-                'photo': '💡 *Советы по фото*\n\n📌 Ищите смотровые площадки\n📌 Фото на рассвете/закате\n📌 Местные жители колоритны\n📌 Уличные рынки',
-            }
-            await message.answer(tips.get(value, f"💡 *{value}*\n\nСовет скоро появится"), parse_mode='Markdown')
+        function closeDetail() {
+            document.getElementById('detailPage').classList.add('hidden');
+            showMainMenu();
+        }
 
-        # ============== ПОГОДА ==============
-        elif action == 'weather':
-            weather = {
-                'Турция': '🌤️ *Погода в Турции*\n\n🇹🇷 Анталья: +28°C, солнечно\n🇹🇷 Стамбул: +24°C, переменная облачность\n🇹🇷 Кемер: +29°C, ясно\n\n💧 Влажность: 60%\n🌬️ Ветер: 5 м/с',
-                'Таиланд': '🌤️ *Погода в Таиланде*\n\n🇹🇭 Пхукет: +32°C, солнечно\n🇹🇭 Паттайя: +31°C, ясно\n🇹🇭 Самуи: +30°C, небольшие облака\n\n💧 Влажность: 75%',
-                'Италия': '🌤️ *Погода в Италии*\n\n🇮🇹 Рим: +24°C, ясно\n🇮🇹 Венеция: +22°C, облачно\n🇮🇹 Флоренция: +23°C, солнечно',
-                'Испания': '🌤️ *Погода в Испании*\n\n🇪🇸 Барселона: +26°C, солнечно\n🇪🇸 Мадрид: +28°C, ясно\n🇪🇸 Коста-Брава: +25°C',
-                'Греция': '🌤️ *Погода в Греции*\n\n🇬🇷 Афины: +27°C, ясно\n🇬🇷 Крит: +28°C, солнечно\n🇬🇷 Родос: +27°C',
-                'ОАЭ': '🌤️ *Погода в ОАЭ*\n\n🇦🇪 Дубай: +35°C, солнечно\n🇦🇪 Абу-Даби: +36°C, ясно\n\n💧 Влажность: 50%',
-                'Египет': '🌤️ *Погода в Египте*\n\n🇪🇬 Шарм-эль-Шейх: +32°C, солнечно\n🇪🇬 Хургада: +31°C, ясно',
-                'Мальдивы': '🌤️ *Погода на Мальдивах*\n\n🇲🇻 Мале: +30°C, переменная облачность\n🌊 Вода: +28°C',
-            }
-            await message.answer(weather.get(value, f"🌤️ *{value}*\n\nПрогноз погоды скоро появится"),
-                                 parse_mode='Markdown')
+        // ============== ФИЛЬТРАЦИЯ ==============
+        function filterCategory(cat) {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
 
-        # ============== ВАЛЮТА ==============
-        elif action == 'currency':
-            currencies = {
-                'USD': '💵 *Доллар США (USD)*\n\n🇺🇸 1 USD = 91.45 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: +0.23',
-                'EUR': '💵 *Евро (EUR)*\n\n🇪🇺 1 EUR = 98.76 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: +0.15',
-                'TRY': '💵 *Турецкая лира (TRY)*\n\n🇹🇷 1 TRY = 2.84 RUB\n💰 Курс ЦБ РФ\n📈 Изменение: -0.05',
-                'THB': '💵 *Тайский бат (THB)*\n\n🇹🇭 1 THB = 2.52 RUB\n💰 Курс ЦБ РФ',
-                'AED': '💵 *Дирхам ОАЭ (AED)*\n\n🇦🇪 1 AED = 24.90 RUB\n💰 Курс ЦБ РФ',
-                'GBP': '💵 *Фунт стерлингов (GBP)*\n\n🇬🇧 1 GBP = 115.30 RUB\n💰 Курс ЦБ РФ',
-                'CNY': '💵 *Китайский юань (CNY)*\n\n🇨🇳 1 CNY = 12.65 RUB\n💰 Курс ЦБ РФ',
-                'JPY': '💵 *Японская иена (JPY)*\n\n🇯🇵 100 JPY = 61.00 RUB\n💰 Курс ЦБ РФ',
-            }
-            await message.answer(currencies.get(value, f"💵 *{value}*\n\nКурс валюты скоро появится"),
-                                 parse_mode='Markdown')
+            let filtered = countries;
+            if (cat === 'asia') filtered = countries.filter(c => c.category === 'asia');
+            if (cat === 'europe') filtered = countries.filter(c => c.category === 'europe');
+            if (cat === 'popular') filtered = countries.filter(c => c.popular);
 
-        # ============== ТРАНСПОРТ ==============
-        elif action == 'transport':
-            transports = {
-                'avia': '✈️ *АВИАБИЛЕТЫ*\n\n🔍 *Где искать:*\n• Aviasales, Skyscanner, Google Flights\n\n💰 *Примерные цены (туда-обратно):*\n• Москва - Анталья: от 150€\n• Москва - Стамбул: от 120€\n• Москва - Бангкок: от 350€\n• Москва - Париж: от 250€\n• Москва - Рим: от 220€\n\n📆 *Советы:*\n• Лучшие дни для покупки: вторник, среда\n• Покупайте за 2-3 месяца до вылета\n• Используйте режим инкогнито',
+            renderFilteredCountries(filtered);
+        }
 
-                'train': '🚂 *ПОЕЗДА*\n\n🌍 *В Европе:*\n• Interrail/Eurail: 200-500€ на 7 дней\n• ЖД билеты: от 20€ за поездку\n\n🇷🇺 *В России:*\n• Москва - Питер: от 15€ (Сапсан)\n• Москва - Сочи: от 25€\n\n💡 *Советы:*\n• Покупайте заранее (дешевле)\n• Ночные поезда экономят отель\n• В Европе выгоднее Interrail',
+        function renderFilteredCountries(filtered) {
+            const grid = document.getElementById('countriesGrid');
+            if (!grid) return;
 
-                'bus': '🚌 *АВТОБУСЫ*\n\n🌍 *Международные:*\n• FlixBus (Европа): от 5€ за поездку\n• Ecolines (Прибалтика): от 20€\n\n🌏 *В Азии:*\n• VIP автобусы: от 8€ (Таиланд)\n• Ночные автобусы: от 10€\n\n💰 *Цены:*\n• На 30-40% дешевле поездов\n• Киев - Варшава: от 15€',
+            grid.innerHTML = filtered.map(c => `
+                <div class="item-card" onclick="showCountryDetail('${c.id}')">
+                    <div class="item-flag">${c.flag}</div>
+                    <div class="item-name">${c.name}</div>
+                </div>
+            `).join('');
+        }
 
-                'rental': '🚗 *АРЕНДА АВТО*\n\n💰 *Цены в день:*\n• Европа: от 20€\n• Турция: от 15€\n• Таиланд: от 20€\n• США: от 30$\n\n📋 *Нужные документы:*\n• Права (международные желательно)\n• Паспорт\n• Кредитная карта (залог)\n• Возраст от 21 года\n\n⚠️ *Важно:*\n• Фото машины при получении\n• Полная страховка\n• Проверяйте топливо',
+        // ============== РЕНДЕРИНГ ==============
+        function renderCountries() {
+            renderFilteredCountries(countries);
+        }
 
-                'taxi': '🚕 *ТАКСИ В МИРЕ*\n\n🌍 *Популярные приложения:*\n• Uber (весь мир)\n• Bolt (Европа)\n• Yandex Taxi (Россия, СНГ)\n• Grab (ЮВА)\n• Careem (Ближний Восток)\n\n💰 *Примерные цены:*\n• Москва: от 2€ за посадку\n• Бангкок: от 1€ за км\n• Стамбул: от 0.30€ за км\n\n💡 *Советы:*\n• В Азии лучше приложения, чем такси с улицы\n• Всегда проверяйте маршрут\n• В Африке и Индии торгуйтесь',
+        function renderVisas() {
+            const list = document.getElementById('visaList');
+            list.innerHTML = visas.map(v => `
+                <div class="list-item" onclick="showVisaDetail('${v.id}')">
+                    <span class="list-icon">📄</span>
+                    <div class="list-content">
+                        <div class="list-title">${v.name}</div>
+                        <div class="list-subtitle">${v.countries} • ${v.price}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-                'metro': '🚇 *МЕТРО В МИРЕ*\n\n🇷🇺 *Москва:* 0.70€, красивое, 15 линий\n🇯🇵 *Токио:* от 1.20€, чистое, сложное\n🇫🇷 *Париж:* 1.90€, 16 линий\n🇬🇧 *Лондон:* 2.50£ (~3€), 11 линий\n🇩🇪 *Берлин:* 3€, 10 линий\n🇨🇳 *Пекин:* 0.40€, самое большое\n🇦🇪 *Дубай:* 0.80€, без водителя\n\n💡 *Советы:*\n• Покупайте проездные на день\n• В Европе выгоднее туристические карты\n• Скачайте карту метро офлайн',
+        function renderInsurances() {
+            const list = document.getElementById('insuranceList');
+            list.innerHTML = insurances.map(i => `
+                <div class="list-item" onclick="showInsuranceDetail('${i.id}')">
+                    <span class="list-icon">🩺</span>
+                    <div class="list-content">
+                        <div class="list-title">${i.name}</div>
+                        <div class="list-subtitle">${i.price} • ${i.coverage}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-                'ferry': '⛴️ *ПАРОМЫ И ВОДНЫЙ ТРАНСПОРТ*\n\n🇬🇷 *Греция:*\n• Между островами: от 15€\n• Афины - Санторини: от 40€\n\n🇮🇹 *Италия:*\n• Венеция: вапоретто 7.50€\n• Неаполь - Капри: от 20€\n\n🇹🇭 *Таиланд:*\n• Острова: от 8€\n• Лонг-тейл: от 2.50€\n\n🇸🇪 *Скандинавия:*\n• Хельсинки - Стокгольм: от 30€',
+        function renderTips() {
+            const list = document.getElementById('tipsList');
+            list.innerHTML = tips.map(t => `
+                <div class="list-item" onclick="showTipDetail('${t.id}')">
+                    <span class="list-icon">💡</span>
+                    <div class="list-content">
+                        <div class="list-title">${t.name}</div>
+                        <div class="list-subtitle">${t.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-                'bicycle': '🚲 *ВЕЛОПРОКАТ*\n\n🌍 *В Европе:*\n• Париж (Vélib): 5€/день\n• Амстердам: от 10€/день\n• Берлин: 3€/час\n\n🌏 *В Азии:*\n• Таиланд: от 2.50€/день\n• Вьетнам: от 2€/день\n\n💡 *Советы:*\n• Шлем обязателен не везде\n• Фоткайте велосипед перед арендой\n• Проверяйте тормоза и шины'
-            }
+        function renderWeather() {
+            const grid = document.getElementById('weatherGrid');
 
-            # Если выбрана конкретная опция
-            if value in transports:
-                await message.answer(transports[value], parse_mode='Markdown')
-            else:
-                # Показываем общее меню транспорта
-                menu = "🚗 *ТРАНСПОРТ В ПУТЕШЕСТВИЯХ*\n\nВыберите вид транспорта:\n\n"
-                menu += "✈️ *Авиабилеты* - перелеты\n"
-                menu += "🚂 *Поезда* - ж/д билеты\n"
-                menu += "🚌 *Автобусы* - междугородние\n"
-                menu += "🚗 *Аренда авто* - машины\n"
-                menu += "🚕 *Такси* - в разных странах\n"
-                menu += "🚇 *Метро* - в мире\n"
-                menu += "⛴️ *Паромы* - водный транспорт\n"
-                menu += "🚲 *Велопрокат* - велосипеды\n\n"
-                menu += "👇 Выберите конкретный пункт в меню"
+            grid.innerHTML = countries.map(c => {
+                const temp = weatherData[c.capital] || '?°C';
+                return `
+                    <div class="item-card" onclick="showWeatherDetail('${c.id}')">
+                        <div class="item-flag">${c.flag}</div>
+                        <div class="item-name">${c.name}</div>
+                        <div class="item-temp">${temp}</div>
+                    </div>
+                `;
+            }).join('');
+        }
 
-                await message.answer(menu, parse_mode='Markdown')
+        function renderCurrencies() {
+            const list = document.getElementById('currencyList');
+            list.innerHTML = currencyRates.map(c => `
+                <div class="list-item" onclick="showCurrencyDetail('${c.code}')">
+                    <span class="list-icon">${c.flag}</span>
+                    <div class="list-content">
+                        <div class="list-title">${c.name}</div>
+                        <div class="list-subtitle">1 ${c.code} = ${c.rate} ₽</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-        # ============== ОТЕЛИ ==============
-        elif action == 'hotels':
-            hotels = {
-                'Турция': '🏨 *Отели Турции*\n\n🔍 Поиск: Booking, Ostrovok\n💰 3*: от 3000₽/ночь\n💰 5* All Inclusive: от 8000₽/ночь\n🏖️ Лучшие: Rixos, Maxx Royal',
-                'Таиланд': '🏨 *Отели Таиланда*\n\n💰 Бунгало: от 1500₽/ночь\n💰 4*: от 4000₽/ночь\n🏝️ Лучшие: The Shore, Banyan Tree',
-                'Италия': '🏨 *Отели Италии*\n\n💰 3*: от 5000₽/ночь\n💰 4*: от 10000₽/ночь\n🏛️ Лучшие: Hassler, Danieli',
-                'Испания': '🏨 *Отели Испании*\n\n💰 3*: от 4000₽/ночь\n💰 4*: от 8000₽/ночь',
-                'ОАЭ': '🏨 *Отели ОАЭ*\n\n💰 4*: от 8000₽/ночь\n💰 5*: от 15000₽/ночь\n🏨 Лучшие: Burj Al Arab, Atlantis',
-                'Египет': '🏨 *Отели Египта*\n\n💰 4* All Inc: от 5000₽/ночь\n💰 5* All Inc: от 8000₽/ночь',
-                'hotels': '🏨 *Поиск отелей*\n\n🔍 Booking.com\n🔍 Ostrovok.ru\n🔍 Agoda (Азия)\n🔍 Airbnb (апартаменты)',
-                'apartments': '🏠 *Апартаменты*\n\n🔍 Airbnb, Booking\n💰 Дешевле отелей на 30%\n✅ Есть кухня и стиралка',
-                'hostels': '🛏️ *Хостелы*\n\n💰 От 800₽/ночь\n✅ Общение с людьми\n🔍 Hostelworld',
-            }
-            await message.answer(hotels.get(value, f"🏨 *{value}*\n\nИнформация об отелях скоро появится"),
-                                 parse_mode='Markdown')
+        function renderTransports() {
+            const list = document.getElementById('transportList');
+            list.innerHTML = transports.map(t => `
+                <div class="list-item" onclick="showTransportDetail('${t.id}')">
+                    <span class="list-icon">🚗</span>
+                    <div class="list-content">
+                        <div class="list-title">${t.name}</div>
+                        <div class="list-subtitle">${t.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-        # ============== ЕДА ==============
-        elif action == 'food':
-            foods = {
-                'Турция': '🍜 *Турецкая кухня*\n\n🥩 Кебаб (мясо на гриле)\n🍬 Пахлава (сладкое)\n🍡 Рахат-лукум\n☕ Турецкий кофе\n🍞 Симит (бублик)',
-                'Таиланд': '🍜 *Тайская кухня*\n\n🍲 Том Ям (острый суп)\n🍝 Пад Тай (лапша)\n🥭 Сладкий рис с манго\n🍚 Кхао Пад (жареный рис)',
-                'Италия': '🍜 *Итальянская кухня*\n\n🍕 Пицца Маргарита\n🍝 Паста Карбонара\n🍦 Джелато (мороженое)\n☕ Эспрессо',
-                'Испания': '🍜 *Испанская кухня*\n\n🥘 Паэлья (рис с морепродуктами)\n🍖 Хамон (вяленое мясо)\n🍢 Тапас (закуски)',
-                'Греция': '🍜 *Греческая кухня*\n\n🥗 Греческий салат\n🥙 Сувлаки (шашлычки)\n🧀 Сыр фета\n🍆 Мусака',
-                'Япония': '🍜 *Японская кухня*\n\n🍣 Суши и роллы\n🍜 Рамен (лапша)\n🍱 Бэнто (ланч-боксы)',
-                'Китай': '🍜 *Китайская кухня*\n\n🦆 Утка по-пекински\n🥟 Димасамы\n🍚 Жареный рис',
-                'Индия': '🍜 *Индийская кухня*\n\n🍛 Карри (острое)\n🍞 Наан (лепешки)\n🍚 Бирьяни',
-                'restaurants': '🍽️ *Рестораны*\n\n🔍 TripAdvisor\n🔍 Michelin Guide\n📱 The Fork (скидки)',
-                'street': '🥡 *Уличная еда*\n\n🌍 Азия: безопасно и вкусно\n💰 Дешево: от 100₽\n⚠️ Смотрите за свежестью',
-                'halal': '🥩 *Халяль еда*\n\n🌍 Турция, ОАЭ, Малайзия\n🔍 Ищите значок Halal\n✅ Везде в мусульманских странах',
-                'veg': '🥗 *Вегетарианское*\n\n🌍 Индия (лучший выбор)\n🌍 Таиланд (много овощей)\n🔍 Ищите Vegan в меню',
-            }
-            await message.answer(foods.get(value, f"🍜 *{value}*\n\nИнформация о кухне скоро появится"),
-                                 parse_mode='Markdown')
+        function renderHotels() {
+            const grid = document.getElementById('hotelsGrid');
+            grid.innerHTML = hotels.map(h => `
+                <div class="item-card" onclick="showHotelDetail('${h.id}')">
+                    <div class="item-flag">${h.flag}</div>
+                    <div class="item-name">${h.name}</div>
+                    <div class="item-temp">${h.price}</div>
+                </div>
+            `).join('');
+        }
 
-        # ============== ЕСЛИ ЧТО-ТО НЕ НАШЛОСЬ ==============
-        else:
-            await message.answer(f"✅ Запрос получен: {action} - {value}\n\nСкоро появится подробная информация!")
+        function renderFoods() {
+            const grid = document.getElementById('foodGrid');
+            grid.innerHTML = foods.map(f => `
+                <div class="item-card" onclick="showFoodDetail('${f.id}')">
+                    <div class="item-flag">${f.flag}</div>
+                    <div class="item-name">${f.name}</div>
+                    <div class="list-subtitle">${f.desc}</div>
+                </div>
+            `).join('');
+        }
 
-    except Exception as e:
-        await message.answer("✅ Запрос получен! Информация обрабатывается...")
-        logging.error(f"Error: {e}")
+        function renderShopping() {
+            const grid = document.getElementById('shoppingGrid');
+            grid.innerHTML = shopping.map(s => `
+                <div class="item-card" onclick="showShoppingDetail('${s.id}')">
+                    <div class="item-flag">${s.flag}</div>
+                    <div class="item-name">${s.name}</div>
+                    <div class="list-subtitle">${s.desc}</div>
+                </div>
+            `).join('');
+        }
 
+        // ============== КОНВЕРТЕР ВАЛЮТ ==============
+        function initCurrencyConverter() {
+            const fromSelect = document.getElementById('fromCurrency');
+            const toSelect = document.getElementById('toCurrency');
 
-async def main():
-    logging.info("Starting TravelMate bot with ALL buttons working...")
-    await dp.start_polling(bot)
+            if (!fromSelect || !toSelect) return;
 
+            let options = '';
+            currencyRates.forEach(c => {
+                options += `<option value="${c.rate}" data-code="${c.code}">${c.flag} ${c.code} - ${c.name}</option>`;
+            });
 
-if __name__ == '__main__':
-    asyncio.run(main())
+            fromSelect.innerHTML = options;
+            toSelect.innerHTML = options;
+
+            toSelect.value = '98.76';
+        }
+
+        function convertCurrency() {
+            const amount = parseFloat(document.getElementById('amountInput').value) || 1;
+            const fromRate = parseFloat(document.getElementById('fromCurrency').value);
+            const toRate = parseFloat(document.getElementById('toCurrency').value);
+
+            const result = (amount / fromRate) * toRate;
+            document.getElementById('resultInput').value = result.toFixed(2);
+        }
+
+        // ============== ДЕТАЛЬНЫЕ ФУНКЦИИ ==============
+        function showCountryDetail(id) {
+            const c = countries.find(c => c.id === id);
+            if (!c) return;
+
+            const content = `
+                <div class="info-grid">
+                    <div class="info-card"><div class="info-label">Виза</div><div class="info-value">${c.visa}</div></div>
+                    <div class="info-card"><div class="info-label">Валюта</div><div class="info-value">${c.currency}</div></div>
+                    <div class="info-card"><div class="info-label">Столица</div><div class="info-value">${c.capital}</div></div>
+                    <div class="info-card"><div class="info-label">Погода</div><div class="info-value">${weatherData[c.capital] || '?°C'}</div></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">🏖️ Популярные курорты</div>
+                    <ul>
+                        <li>Анталья - пляжный отдых</li>
+                        <li>Стамбул - экскурсии</li>
+                        <li>Каппадокия - уникальное</li>
+                    </ul>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">💰 Средние цены</div>
+                    <ul>
+                        <li>Обед: 500-1000₽</li>
+                        <li>Отель: от 3000₽/ночь</li>
+                    </ul>
+                </div>
+            `;
+            showDetail(c.flag, c.name, content);
+        }
+
+        function showVisaDetail(id) {
+            const v = visas.find(v => v.id === id);
+            if (!v) return;
+
+            const content = `
+                <div class="info-grid">
+                    <div class="info-card"><div class="info-label">Стоимость</div><div class="info-value">${v.price}</div></div>
+                    <div class="info-card"><div class="info-label">Срок</div><div class="info-value">${v.time}</div></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">📋 Документы</div>
+                    <ul>
+                        <li>Загранпаспорт</li>
+                        <li>Анкета</li>
+                        <li>Фото 3.5x4.5</li>
+                        <li>Страховка</li>
+                    </ul>
+                </div>
+            `;
+            showDetail('📄', v.name, content);
+        }
+
+        function showInsuranceDetail(id) {
+            const i = insurances.find(i => i.id === id);
+            if (!i) return;
+
+            const content = `
+                <div class="info-grid">
+                    <div class="info-card"><div class="info-label">Цена</div><div class="info-value">${i.price}</div></div>
+                    <div class="info-card"><div class="info-label">Покрытие</div><div class="info-value">${i.coverage}</div></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">✅ Что включено</div>
+                    <ul>
+                        <li>Лечение</li>
+                        <li>Госпитализация</li>
+                        <li>Транспортировка</li>
+                    </ul>
+                </div>
+            `;
+            showDetail('🩺', i.name, content);
+        }
+
+        function showTipDetail(id) {
+            const t = tips.find(t => t.id === id);
+            if (!t) return;
+
+            const tipsContent = {
+                'visa': 'Подавайтесь за 2-3 месяца, сделайте качественные фото',
+                'insurance': 'Берите покрытие от 30k€, проверьте франшизу',
+                'money': 'Бронируйте заранее, меняйте валюту не в аэропорту',
+                'packing': 'Паспорт, страховка, деньги, аптечка',
+                'safety': 'Копии документов отдельно',
+                'language': 'Hello - Здравствуйте, Thank you - Спасибо',
+                'transport': 'Нужны международные права',
+                'hotels': 'Читайте свежие отзывы',
+                'food': 'Пробуйте уличную еду'
+            };
+
+            const content = `
+                <div class="detail-section">
+                    <div class="detail-section-title">💡 Совет</div>
+                    <div class="detail-text">${tipsContent[t.id] || 'Полезная информация'}</div>
+                </div>
+            `;
+            showDetail('💡', t.name, content);
+        }
+
+        function showWeatherDetail(id) {
+            const c = countries.find(c => c.id === id);
+            if (!c) return;
+
+            const temp = weatherData[c.capital] || '?°C';
+
+            const content = `
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Столица</div>
+                        <div class="info-value">${c.capital}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Температура</div>
+                        <div class="info-value">${temp}</div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">🌡️ Информация</div>
+                    <ul>
+                        <li>Влажность: 60-70%</li>
+                        <li>Ветер: 3-5 м/с</li>
+                        <li>Давление: 760 мм</li>
+                    </ul>
+                </div>
+            `;
+            showDetail('🌤️', c.name, content);
+        }
+
+        function showCurrencyDetail(code) {
+            const c = currencyRates.find(c => c.code === code);
+            if (!c) return;
+
+            const content = `
+                <div class="info-grid">
+                    <div class="info-card"><div class="info-label">Курс</div><div class="info-value">${c.rate} ₽</div></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">💱 Где менять</div>
+                    <ul>
+                        <li>Банки: лучший курс</li>
+                        <li>Аэропорт: невыгодно</li>
+                    </ul>
+                </div>
+            `;
+            showDetail(c.flag, c.name, content);
+        }
+
+        function showTransportDetail(id) {
+            const transportsContent = {
+                'avia': '✈️ Москва-Анталья от 15000₽',
+                'train': '🚂 Москва-Питер от 1500₽',
+                'bus': '🚌 Дешевле поездов на 30%',
+                'rental': '🚗 Аренда от 20€/день',
+                'taxi': '🚕 Uber, Bolt, местные приложения',
+                'metro': '🚇 Метро в мире'
+            };
+
+            const names = {
+                'avia': 'Авиабилеты', 'train': 'Поезда', 'bus': 'Автобусы',
+                'rental': 'Аренда авто', 'taxi': 'Такси', 'metro': 'Метро'
+            };
+
+            const content = `
+                <div class="detail-section">
+                    <div class="detail-section-title">🚗 Информация</div>
+                    <div class="detail-text">${transportsContent[id] || 'Информация о транспорте'}</div>
+                </div>
+            `;
+            showDetail('🚗', names[id], content);
+        }
+
+        function showHotelDetail(id) {
+            const h = hotels.find(h => h.id === id);
+            if (!h) return;
+
+            const price = parseInt(h.price.replace('от ', '').replace('₽', ''));
+
+            const content = `
+                <div class="info-grid">
+                    <div class="info-card"><div class="info-label">Цены от</div><div class="info-value">${h.price}</div></div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">🏨 Отели</div>
+                    <ul>
+                        <li>3*: ${h.price}</li>
+                        <li>4*: от ${Math.round(price * 1.5)}₽</li>
+                        <li>5*: от ${Math.round(price * 2)}₽</li>
+                    </ul>
+                </div>
+            `;
+            showDetail('🏨', h.name, content);
+        }
+
+        function showFoodDetail(id) {
+            const f = foods.find(f => f.id === id);
+            if (!f) return;
+
+            const foodsContent = {
+                'turkey': '🥩 Кебаб, 🍬 Пахлава, ☕ Турецкий кофе',
+                'thailand': '🍲 Том Ям, 🍝 Пад Тай, 🥭 Рис с манго',
+                'italy': '🍕 Пицца, 🍝 Паста, 🍦 Джелато',
+                'spain': '🥘 Паэлья, 🍖 Хамон, 🍢 Тапас',
+                'greece': '🥗 Греческий салат, 🥙 Сувлаки, 🧀 Фета',
+                'japan': '🍣 Суши, 🍜 Рамен, 🍱 Бэнто',
+                'china': '🦆 Утка по-пекински, 🥟 Димасамы',
+                'india': '🍛 Карри, 🍞 Наан, 🍚 Бирьяни'
+            };
+
+            const content = `
+                <div class="detail-section">
+                    <div class="detail-section-title">🍜 Блюда</div>
+                    <div class="detail-text">${foodsContent[f.id] || f.desc}</div>
+                </div>
+            `;
+            showDetail('🍜', f.name, content);
+        }
+
+        function showShoppingDetail(id) {
+            const s = shopping.find(s => s.id === id);
+            if (!s) return;
+
+            const content = `
+                <div class="detail-section">
+                    <div class="detail-section-title">🛍️ Что покупают</div>
+                    <div class="detail-text">${s.desc}</div>
+                </div>
+            `;
+            showDetail('🛍️', s.name, content);
+        }
+
+        // Инициализация
+        showMainMenu();
+    </script>
+</body>
+</html>
